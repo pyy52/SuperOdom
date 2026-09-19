@@ -47,6 +47,18 @@ ament_export_targets(camodocal HAS_LIBRARY_TARGET)
 ament_export_include_directories(include)
 ament_export_dependencies(Eigen3 OpenCV Ceres Boost)
 
+# ---------------------------------------------------------------------------
+# VINS-Mono feature-tracking core (upstream 90dabb5e, GPLv3). ROS1 parameter
+# access and logging are shimmed out; see src/tracker/tracker_log.h and
+# docs/THIRD_PARTY.md.
+# ---------------------------------------------------------------------------
+add_library(vins_tracker STATIC
+  src/tracker/feature_tracker.cpp
+  src/tracker/parameters.cpp
+)
+target_include_directories(vins_tracker PUBLIC src/tracker)
+target_link_libraries(vins_tracker PUBLIC camodocal ${OpenCV_LIBS})
+
 install(DIRECTORY include/ DESTINATION include)
 install(TARGETS camodocal EXPORT camodocal
   LIBRARY DESTINATION lib
@@ -60,6 +72,9 @@ if(BUILD_TESTING)
   if(ament_cmake_gtest_FOUND)
     ament_add_gtest(test_camera_model test/test_camera_model.cpp)
     target_link_libraries(test_camera_model camodocal Eigen3::Eigen)
+
+    ament_add_gtest(test_feature_tracker test/test_feature_tracker.cpp)
+    target_link_libraries(test_feature_tracker vins_tracker camodocal Eigen3::Eigen)
   endif()
 endif()
 
