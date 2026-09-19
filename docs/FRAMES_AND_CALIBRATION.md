@@ -75,3 +75,38 @@ X = { R_WB, p_WB, v_WB, b_a, b_g }        # 由中央 IMU odometry（imuPreinteg
 colcon build --packages-select super_odometry
 cd build/super_odometry && ctest -R test_frames --output-on-failure
 ```
+
+
+## 7. TUM-VI room1 外参溯源（Gate 决定 D）
+
+来源：官方 kalibr chain `openvins_ws/src/open_vins/config/tum_vi/kalibr_imucam_chain.yaml`
+（cam0，`T_cam_imu` ≡ T_C_I，语义 `p_C = T_C_I · p_I`，即 R_C_I + p_C_I）。
+
+VINS 需要的是 `p_I = T_I_C · p_C`：
+
+```text
+R_I_C = R_C_I^T
+p_I_C = -R_C_I^T · p_C_I
+```
+
+原始矩阵（R_C_I）：
+```text
+[-0.9995250378696743  0.029615343885863205 -0.008522328211654736]
+[ 0.0075019185074052044 -0.03439736061393144 -0.9993800792498829]
+[-0.02989013031643309 -0.998969345370175  0.03415885127385616]
+p_C_I = [0.04727988224914392, -0.047443232143367084, -0.0681999605066297]
+```
+
+求逆后（R_I_C，写入 `super_odometry_vio/config/tum_vi_room1_vio.yaml` 的 extrinsicRotation）：
+```text
+[-0.9995250378696743  0.0075019185074052044 -0.02989013031643309]
+[ 0.029615343885863205 -0.03439736061393144 -0.998969345370175]
+[-0.008522328211654736 -0.9993800792498829  0.03415885127385616]
+p_I_C = [0.045574835649698026, -0.07116180183799704, -0.04468125411714437]
+```
+
+一致性检查（数值验证在 `test_vins_frames.TumViKalibrInverseConsistency`）：
+`T_C_I · T_I_C ≈ I`（正交性残差 max 1.2e-15，det 1.0）。
+
+注意区分（Gate 决定 D）：upstream VINS-Mono 自带 `config/tum/tum_config.yaml`（作者自标定外参+IMU 噪声）
+作为独立 profile 保留：`config/tum_vi_room1_vio_upstream.yaml`，与本官方链 profile 分开跑、不合并。

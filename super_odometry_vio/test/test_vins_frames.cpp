@@ -158,6 +158,41 @@ TEST(VinsFrameConvention, ProjectionFactorZeroResidualNonIdentityChain) {
   EXPECT_NEAR(residuals[1], 0.0, 1e-9);
 }
 
+TEST(VinsFrameConvention, TumViKalibrInverseConsistency) {
+  // Gate decision D: the TUM-VI profile's extrinsic is the inverse of the
+  // official kalibr T_cam_imu; the inverse relation is locked numerically.
+  const Eigen::Matrix3d R_C_I =
+      (Eigen::Matrix3d() << -0.9995250378696743, 0.029615343885863205,
+       -0.008522328211654736, 0.0075019185074052044, -0.03439736061393144,
+       -0.9993800792498829, -0.02989013031643309, -0.998969345370175,
+       0.03415885127385616)
+          .finished();
+  const Eigen::Vector3d p_C_I(0.04727988224914392, -0.047443232143367084,
+                              -0.0681999605066297);
+
+  const Eigen::Matrix3d R_I_C = R_C_I.transpose();
+  const Eigen::Vector3d p_I_C = -R_C_I.transpose() * p_C_I;
+
+  // p_C = T_C_I * p_I must undo p_I = T_I_C * p_C.
+  const Eigen::Vector3d p_body(0.03, -0.07, 0.11);
+  const Eigen::Vector3d p_cam = R_C_I * p_body + p_C_I;
+  const Eigen::Vector3d p_body_back = R_I_C * p_cam + p_I_C;
+  EXPECT_TRUE(p_body_back.isApprox(p_body, 1e-12));
+
+  // The values shipped in tum_vi_room1_vio.yaml must equal the analytic
+  // inverse (checked to the digits written into the config file).
+  const Eigen::Matrix3d R_yaml =
+      (Eigen::Matrix3d() << -0.9995250378696743, 0.0075019185074052044,
+       -0.02989013031643309, 0.029615343885863205, -0.03439736061393144,
+       -0.998969345370175, -0.008522328211654736, -0.9993800792498829,
+       0.03415885127385616)
+          .finished();
+  EXPECT_TRUE(R_yaml.isApprox(R_I_C, 1e-15));
+  EXPECT_TRUE(Eigen::Vector3d(0.045574835649698026, -0.07116180183799704,
+                              -0.04468125411714437)
+                  .isApprox(p_I_C, 1e-15));
+}
+
 TEST(VinsFrameConvention, PoseParameterizationPlusMatchesAnalytic) {
   const Eigen::Quaterniond q = qFromRpy(0.1, -0.4, 0.9);
   const Eigen::Vector3d p(0.5, -0.3, 1.2);

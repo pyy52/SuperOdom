@@ -109,13 +109,16 @@ target_include_directories(vio_wrapper PUBLIC ${Sophus_INCLUDE_DIRS})
 target_link_libraries(vio_wrapper PUBLIC vins_estimator)
 
 # ROS2 estimator adapter: IMU + features in, odometry/health/CSV out.
+add_executable(camera_blackout_node src/ros2/camera_blackout_node.cpp)
+ament_target_dependencies(camera_blackout_node rclcpp sensor_msgs)
+
 add_executable(vio_estimator_node src/ros2/estimator_node.cpp)
 ament_target_dependencies(vio_estimator_node
   rclcpp sensor_msgs nav_msgs geometry_msgs std_msgs)
 target_link_libraries(vio_estimator_node vio_wrapper)
 
 install(DIRECTORY include/ DESTINATION include)
-install(TARGETS vio_feature_tracker_node vio_estimator_node DESTINATION lib/${PROJECT_NAME})
+install(TARGETS vio_feature_tracker_node vio_estimator_node camera_blackout_node DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY config launch DESTINATION share/${PROJECT_NAME}/)
 install(TARGETS camodocal EXPORT camodocal
   LIBRARY DESTINATION lib

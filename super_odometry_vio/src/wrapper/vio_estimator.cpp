@@ -33,6 +33,19 @@ Sophus::SE3d se3FromEstimator(const Eigen::Vector3d& p, const Eigen::Matrix3d& R
     return Sophus::SE3d(Eigen::Quaterniond(R).normalized(), p);
 }
 
+bool stateNotFinite(const Estimator& est)
+{
+    const int i = est.frame_count;
+    const auto bad = [](double v) { return !std::isfinite(v); };
+    for (int k = 0; k <= i; ++k)
+    {
+        if (est.Ps[k].unaryExpr(bad).any() || est.Rs[k].unaryExpr(bad).any() ||
+            est.Vs[k].unaryExpr(bad).any())
+            return true;
+    }
+    return est.ric[0].unaryExpr(bad).any();
+}
+
 double medianOf(std::vector<double>& v)
 {
     if (v.empty()) return 0.0;
@@ -57,6 +70,9 @@ struct VioEstimator::Impl
     int starving_frames = 0;
     int degraded_frames = 0;
     int recovery_frames = 0;
+    // consecutive-frame hysteresis against ACTIVE<->DEGRADED flapping
+    int consecutive_degraded = 0;
+    int consecutive_healthy = 0;
     double last_feature_stamp_sec = -1.0;
 
     // IMU drain state (upstream node semantics: dt = inter-sample diff,
@@ -66,6 +82,7 @@ struct VioEstimator::Impl
     // Outputs (guarded by the wrapper output mutex)
     VioState state;
     int stale_feature_frames = 0;
+    int nonfinite_feature_drops = 0;
 
     std::deque<double> solve_ms;
     void recordSolveTime(double ms)
@@ -277,6 +294,26 @@ void VioEstimator::processFeatures(const TrackedFeatureFrame& frame)
 
     const double stamp_sec = frame.stamp_ns * kNsToSec;
 
+    // 0) Boundary sanitisation: the upstream fisheye-mask profile can emit
+    // non-finite bearings at the equidistant model's validity edge
+    // (liftProjective fails outside the calibrated FOV). Drop those
+    // observations here - no NaN may ever reach the solver (gate decision C:
+    // hard failures must never linger).
+    TrackedFeatureFrame clean = frame;
+    clean.observations.erase(
+        std::remove_if(clean.observations.begin(), clean.observations.end(),
+                       [](const TrackedFeatureObservation& o)
+                       {
+                           return !o.bearing.allFinite() || !o.pixel.allFinite() ||
+                                  !o.velocity.allFinite() || o.bearing.z() <= 0;
+                       }),
+        clean.observations.end());
+    if (clean.observations.size() != frame.observations.size())
+    {
+        p.nonfinite_feature_drops +=
+            static_cast<int>(frame.observations.size() - clean.observations.size());
+    }
+
     // 1) Sync drain: integrate every IMU sample up to the frame stamp first
     // (upstream getMeasurements semantics). A frame older than already-
     // integrated IMU would corrupt the window bookkeeping and is dropped.
@@ -287,7 +324,7 @@ void VioEstimator::processFeatures(const TrackedFeatureFrame& frame)
     }
     p.drainImu(stamp_sec);
 
-    const int n_features = static_cast<int>(frame.observations.size());
+    const int n_features = static_cast<int>(clean.observations.size());
 
     // 2) Health state machine (gate doc section 11).
     if (p.health == VioHealthState::BYPASS)
@@ -300,6 +337,7 @@ void VioEstimator::processFeatures(const TrackedFeatureFrame& frame)
                 p.est.clearState();
                 p.est.setParameter();
                 p.health = VioHealthState::RECOVERING;
+                p.quality.health = p.health;  // publish the transition frame
                 p.recovery_frames = 0;
                 p.starving_frames = 0;
             }
@@ -324,7 +362,7 @@ void VioEstimator::processFeatures(const TrackedFeatureFrame& frame)
     std_msgs::Header header;
     header.stamp.sec = stamp_sec;
     const auto solve_start = std::chrono::steady_clock::now();
-    p.est.processImage(toVinsImage(frame), header);
+    p.est.processImage(toVinsImage(clean), header);
     p.recordSolveTime(std::chrono::duration<double, std::milli>(
                           std::chrono::steady_clock::now() - solve_start)
                           .count());
@@ -346,24 +384,48 @@ void VioEstimator::processFeatures(const TrackedFeatureFrame& frame)
                   p.quality.tracked_features
             : 0.0;
 
+    // Hard failures bypass all hysteresis: gate doc section C decision -
+    // NaN/Inf/invalid SE(3)/solver failure must go straight to re-init,
+    // never linger in DEGRADED while publishing garbage.
     if (!solving)
     {
         p.health = VioHealthState::WARMUP;
+        p.consecutive_degraded = 0;
+        p.consecutive_healthy = 0;
+    }
+    else if (stateNotFinite(p.est))
+    {
+        p.est.clearState();
+        p.est.setParameter();
+        p.last_imu_stamp_sec = -1.0;  // re-seed after restart
+        p.health = VioHealthState::BYPASS;
+        p.quality.health = p.health;
+        return;
     }
     else if (p.quality.inlier_features < config_.min_features_active ||
              p.quality.information_min_eigenvalue <
                  config_.min_information_eigenvalue)
     {
-        p.health = VioHealthState::DEGRADED;
-    }
-    else if (p.quality.information_min_eigenvalue <
-             config_.bypass_information_eigenvalue)
-    {
-        p.health = VioHealthState::BYPASS;
+        if (++p.consecutive_degraded >= config_.degraded_hysteresis_frames)
+        {
+            p.health = VioHealthState::DEGRADED;
+            p.consecutive_healthy = 0;
+        }
+        // below bypass floor: immediate downgrade, no hysteresis
+        if (p.quality.information_min_eigenvalue <
+            config_.bypass_information_eigenvalue)
+        {
+            p.health = VioHealthState::BYPASS;
+        }
     }
     else
     {
-        p.health = VioHealthState::ACTIVE;
+        if (++p.consecutive_healthy >= config_.degraded_hysteresis_frames ||
+            p.health != VioHealthState::DEGRADED)
+        {
+            p.health = VioHealthState::ACTIVE;
+        }
+        p.consecutive_degraded = 0;
     }
     p.quality.health = p.health;
 

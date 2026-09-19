@@ -34,6 +34,9 @@ struct VioWrapperConfig
     int recovery_consecutive_frames{5};
     double min_information_eigenvalue{50.0};  // H_visual soft floor
     double bypass_information_eigenvalue{5.0};
+    // consecutive-frame hysteresis against ACTIVE<->DEGRADED flapping
+    // (8 frames = 0.4 s at 20 Hz)
+    int degraded_hysteresis_frames{8};
 
     // TUM format trajectory log (empty = disabled)
     std::string trajectory_csv;

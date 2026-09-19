@@ -69,8 +69,14 @@ struct VioQuality
     // vendored core does not expose per-frame residuals (gate doc section 9).
     double reprojection_rmse_px{-1.0};
 
-    // H_visual = sum(J^T J) of the newest frame's projection Jacobians w.r.t.
-    // the 6-DOF relative body motion (unit weights, visual-only block).
+    // visual_observability_proxy: sum(J^T J) of the newest frame's
+    // projection Jacobians w.r.t. the 6-DOF relative body motion (unit
+    // weights, visual-only block). Gate decision B: valid as an
+    // observability proxy for Phase 2c; NOT a true marginal information --
+    // ignores landmark uncertainty and window cross-correlations, and mixes
+    // rotation(rad)/translation(m) scales in one Hessian. Before central
+    // fusion (Phase 3/4): add robust-loss/pixel-noise/inlier weighting and
+    // per-DOF normalisation; do not use as central-fusion covariance.
     double information_min_eigenvalue{0.0};
     double information_max_eigenvalue{0.0};
     double information_condition_number{0.0};

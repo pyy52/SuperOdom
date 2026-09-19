@@ -1,0 +1,37 @@
+%YAML:1.0
+# EXACT VINS-Mono upstream TUM profile (estimator half): upstream authors'
+# IMU-camera extrinsic calibration and IMU noise, verbatim from
+# config/tum/tum_config.yaml @ 90dabb5e. Note this extrinsic is the VINS
+# authors' own calibration, NOT the dataset kalibr chain (that profile lives
+# in tum_vi_room1_vio.yaml). Both profiles are kept and run separately.
+imu_topic: /imu0
+max_solver_time: 0.04
+max_num_iterations: 8
+keyframe_parallax: 10.0
+output_path: /results
+
+acc_n: 0.04
+acc_w: 0.0004
+gyr_n: 0.004
+gyr_w: 2.0e-5
+g_norm: 9.80766
+image_height: 512
+image_width: 512
+
+estimate_extrinsic: 0
+extrinsicRotation: !!opencv-matrix
+  rows: 3
+  cols: 3
+  dt: d
+  data: [-9.9951465899298464e-01, 7.5842033363785165e-03, -3.0214670573904204e-02,
+         2.9940114644659861e-02, -3.4023430206013172e-02, -9.9897246995704592e-01,
+         -8.6044170750674241e-03, -9.9939225835343004e-01, 3.3779845322755464e-02]
+extrinsicTranslation: !!opencv-matrix
+  rows: 3
+  cols: 1
+  dt: d
+  data: [4.4511917113940799e-02, -7.3197096234105752e-02, -4.7972907300764499e-02]
+
+td: 0.0
+estimate_td: 0
+rolling_shutter: 0

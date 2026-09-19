@@ -31,8 +31,26 @@ class VioFeatureTrackerNode : public rclcpp::Node
         }
         image_topic_ = this->declare_parameter<std::string>("image_topic", "");
 
-        readParameters(config_file_);
+        // Fisheye mask path: explicit param, else fisheye_mask.jpg next to
+        // the settings file (installed alongside it, as in upstream).
+        const std::string mask_param =
+            this->declare_parameter<std::string>("fisheye_mask", "");
+        readParameters(config_file_, mask_param);
         tracker_.readIntrinsicParameter(CAM_NAMES.front());
+        if (FISHEYE == 1)
+        {
+            std::string mask_path = FISHEYE_MASK;
+            if (mask_path.empty())
+            {
+                const size_t slash = config_file_.find_last_of('/');
+                mask_path = config_file_.substr(0, slash + 1) + "fisheye_mask.jpg";
+            }
+            tracker_.fisheye_mask = cv::imread(mask_path, 0);
+            if (tracker_.fisheye_mask.empty())
+                RCLCPP_WARN(this->get_logger(),
+                            "fisheye mask '%s' not loadable; continuing without",
+                            mask_path.c_str());
+        }
 
         // Config topics win unless the launch file overrides them explicitly.
         if (image_topic_.empty())
