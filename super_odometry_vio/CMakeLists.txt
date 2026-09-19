@@ -70,6 +70,32 @@ ament_target_dependencies(vio_feature_tracker_node
   rclcpp sensor_msgs geometry_msgs cv_bridge)
 target_link_libraries(vio_feature_tracker_node vins_tracker)
 
+# ---------------------------------------------------------------------------
+# VINS-Mono sliding-window estimator core (upstream 90dabb5e, GPLv3).
+# Algorithm files are vendored with ~zero diff; ROS1 coupling is provided by
+# src/estimator/compat/ shims and a config-file parameters port.
+# ---------------------------------------------------------------------------
+set(VINS_ESTIMATOR_SOURCES
+  src/estimator/estimator.cpp
+  src/estimator/feature_manager.cpp
+  src/estimator/parameters.cpp
+  src/estimator/factor/projection_factor.cpp
+  src/estimator/factor/projection_td_factor.cpp
+  src/estimator/factor/marginalization_factor.cpp
+  src/estimator/factor/pose_local_parameterization.cpp
+  src/estimator/initial/solve_5pts.cpp
+  src/estimator/initial/initial_sfm.cpp
+  src/estimator/initial/initial_aligment.cpp
+  src/estimator/initial/initial_ex_rotation.cpp
+  src/estimator/utility/utility.cpp
+)
+add_library(vins_estimator STATIC ${VINS_ESTIMATOR_SOURCES})
+target_include_directories(vins_estimator PUBLIC
+  src/estimator
+  src/estimator/compat
+)
+target_link_libraries(vins_estimator PUBLIC camodocal ${OpenCV_LIBS} ${CERES_LIBRARIES})
+
 install(DIRECTORY include/ DESTINATION include)
 install(TARGETS vio_feature_tracker_node DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY config launch DESTINATION share/${PROJECT_NAME}/)
@@ -88,6 +114,9 @@ if(BUILD_TESTING)
 
     ament_add_gtest(test_feature_tracker test/test_feature_tracker.cpp)
     target_link_libraries(test_feature_tracker vins_tracker camodocal Eigen3::Eigen)
+
+    ament_add_gtest(test_vins_frames test/test_vins_frames.cpp)
+    target_link_libraries(test_vins_frames vins_estimator camodocal Eigen3::Eigen)
   endif()
 endif()
 
