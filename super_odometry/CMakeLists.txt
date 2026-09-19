@@ -182,4 +182,15 @@ install(DIRECTORY config launch
         DESTINATION share/${PROJECT_NAME}/
 )
 
+# Unit tests (frame/extrinsic convention). Needs only gtest + Eigen, which are
+# already required above; guarded so missing gtest cannot break normal builds.
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest QUIET)
+  if(ament_cmake_gtest_FOUND)
+    ament_add_gtest(test_frames test/test_frames.cpp)
+    target_include_directories(test_frames PRIVATE include)
+    target_link_libraries(test_frames Eigen3::Eigen)
+  endif()
+endif()
+
 ament_package()
