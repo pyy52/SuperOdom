@@ -72,6 +72,7 @@ target_link_libraries(vio_feature_tracker_node vins_tracker)
 
 install(DIRECTORY include/ DESTINATION include)
 install(TARGETS vio_feature_tracker_node DESTINATION lib/${PROJECT_NAME})
+install(DIRECTORY config launch DESTINATION share/${PROJECT_NAME}/)
 install(TARGETS camodocal EXPORT camodocal
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib

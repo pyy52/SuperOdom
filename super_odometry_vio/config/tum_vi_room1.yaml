@@ -1,0 +1,30 @@
+%YAML:1.0
+# VINS-style settings for the TUM-VI room1 sequence (converted to ROS2).
+# Used by super_odometry_vio/vio_feature_tracker_node (Phase 2 standalone VIO).
+# Camera section: TUM-VI wide-angle cam0 calibration from the dataset's kalibr
+# chain (open_vins config/tum_vi/kalibr_imucam_chain.yaml), mapped into
+# camodocal KANNALA_BRANDT ordering: camodocal k2..k5 = kalibr k1..k4
+# (r(theta) = theta + k2*theta^3 + k3*theta^5 + k4*theta^7 + k5*theta^9).
+image_topic: /cam0/image_raw
+imu_topic: /imu0
+max_cnt: 150
+min_dist: 15
+image_width: 512
+image_height: 512
+freq: 0
+F_threshold: 1.0
+show_track: 0
+equalize: 1
+fisheye: 0
+
+model_type: KANNALA_BRANDT
+camera_name: tumvi_wide_cam0
+projection_parameters:
+   k2: 0.0034823894022493434
+   k3: 0.0007150348452162257
+   k4: -0.0020532361418706202
+   k5: 0.00020293673591811182
+   mu: 190.97847715128717
+   mv: 190.9733070521226
+   u0: 254.93170605935475
+   v0: 256.8974428996504

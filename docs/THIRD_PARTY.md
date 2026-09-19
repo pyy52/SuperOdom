@@ -26,8 +26,9 @@
 |---|---|---|
 | `camera_model/include/camodocal/{camera_models,gpl,sparse_graph,calib,chessboard}/` | `super_odometry_vio/include/camodocal/` | 已引入（calib/chessboard 头随目录带入但未编译使用） |
 | `camera_model/src/camera_models/*.cc`、`camera_model/src/gpl/*.cc` | `super_odometry_vio/src/` | 已引入，仅排除离线标定源（chessboard/、calib/），零算法修改 |
-| `feature_tracker/src/feature_tracker.{h,cpp}` | `super_odometry_vio/src/tracker/` | 移植中（ROS1 依赖剥离） |
-| `feature_tracker/src/parameters.{h,cpp}` | `super_odometry_vio/src/tracker/` | 移植中（ros::param → 配置结构体） |
+| `feature_tracker/src/feature_tracker.{h,cpp}` | `super_odometry_vio/src/tracker/` | 已引入：仅加 `tracker_log.h` shim 一行 include，算法零修改 |
+| `feature_tracker/src/parameters.{h,cpp}` | `super_odometry_vio/src/tracker/` | 已引入：`ros::param` 读取改为 FileStorage 配置路径签名，字段读取逻辑与上游一致 |
+| `feature_tracker/src/tic_toc.h` | `super_odometry_vio/src/tracker/` | 已引入（原样） |
 | `vins_estimator/src/{estimator,feature_manager,factor,initial,utility}` | `super_odometry_vio/src/estimator/` | 待引入 |
 
 ## 参考但不复制
