@@ -9,6 +9,11 @@ endif()
 add_compile_options(-Wall -Wextra)
 
 find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Ceres REQUIRED)
@@ -59,7 +64,14 @@ add_library(vins_tracker STATIC
 target_include_directories(vins_tracker PUBLIC src/tracker)
 target_link_libraries(vins_tracker PUBLIC camodocal ${OpenCV_LIBS})
 
+# ROS2 adapter: image in -> VINS-format feature PointCloud out.
+add_executable(vio_feature_tracker_node src/ros2/tracker_node.cpp)
+ament_target_dependencies(vio_feature_tracker_node
+  rclcpp sensor_msgs geometry_msgs cv_bridge)
+target_link_libraries(vio_feature_tracker_node vins_tracker)
+
 install(DIRECTORY include/ DESTINATION include)
+install(TARGETS vio_feature_tracker_node DESTINATION lib/${PROJECT_NAME})
 install(TARGETS camodocal EXPORT camodocal
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
