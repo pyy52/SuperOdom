@@ -11,7 +11,7 @@
 #include <cstdio>
 #include <iostream>
 
-#define ROS_DEBUG(...) do {} while (0)
+#define ROS_DEBUG(...) do { fprintf(stderr, __VA_ARGS__); } while (0)
 #define ROS_DEBUG_STREAM(x) do {} while (0)
 
 #define ROS_INFO(...) do { fprintf(stdout, __VA_ARGS__); } while (0)

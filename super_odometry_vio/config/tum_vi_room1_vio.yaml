@@ -1,0 +1,37 @@
+%YAML:1.0
+# VINS estimator settings for TUM-VI room1 (Phase 2c standalone VIO).
+# Extrinsic = T_B_C (camera pose in IMU/body frame), computed as the inverse
+# of the dataset's kalibr T_cam_imu (open_vins config/tum_vi/kalibr_imucam_chain.yaml):
+#   R_I_C = R_C_I^T, p_I_C = -R_C_I^T * p_C_I.
+# Provenance: docs/VINS_PORTING_NOTES.md.
+imu_topic: /imu0
+max_solver_time: 0.04
+max_num_iterations: 8
+keyframe_parallax: 10.0
+output_path: /results
+
+acc_n: 0.08
+acc_w: 0.004
+gyr_n: 0.004
+gyr_w: 0.0002
+g_norm: 9.80511
+image_height: 512
+image_width: 512
+
+estimate_extrinsic: 0
+extrinsicRotation: !!opencv-matrix
+  rows: 3
+  cols: 3
+  dt: d
+  data: [-0.9995250378696743, 0.0075019185074052044, -0.02989013031643309,
+         0.029615343885863205, -0.03439736061393144, -0.998969345370175,
+         -0.008522328211654736, -0.9993800792498829, 0.03415885127385616]
+extrinsicTranslation: !!opencv-matrix
+  rows: 3
+  cols: 1
+  dt: d
+  data: [0.045574835649698026, -0.07116180183799704, -0.04468125411714437]
+
+td: 0.0
+estimate_td: 0
+rolling_shutter: 0

@@ -17,6 +17,7 @@ find_package(cv_bridge REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Ceres REQUIRED)
+find_package(Sophus REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system)
 
 # ---------------------------------------------------------------------------
@@ -96,8 +97,25 @@ target_include_directories(vins_estimator PUBLIC
 )
 target_link_libraries(vins_estimator PUBLIC camodocal ${OpenCV_LIBS} ${CERES_LIBRARIES})
 
+# ---------------------------------------------------------------------------
+# VioEstimator wrapper: state machine, quality/observability metrics,
+# relative-pose constraints and hooks (ROS-free).
+# ---------------------------------------------------------------------------
+add_library(vio_wrapper STATIC
+  src/wrapper/vio_estimator.cpp
+)
+target_include_directories(vio_wrapper PUBLIC include)
+target_include_directories(vio_wrapper PUBLIC ${Sophus_INCLUDE_DIRS})
+target_link_libraries(vio_wrapper PUBLIC vins_estimator)
+
+# ROS2 estimator adapter: IMU + features in, odometry/health/CSV out.
+add_executable(vio_estimator_node src/ros2/estimator_node.cpp)
+ament_target_dependencies(vio_estimator_node
+  rclcpp sensor_msgs nav_msgs geometry_msgs std_msgs)
+target_link_libraries(vio_estimator_node vio_wrapper)
+
 install(DIRECTORY include/ DESTINATION include)
-install(TARGETS vio_feature_tracker_node DESTINATION lib/${PROJECT_NAME})
+install(TARGETS vio_feature_tracker_node vio_estimator_node DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY config launch DESTINATION share/${PROJECT_NAME}/)
 install(TARGETS camodocal EXPORT camodocal
   LIBRARY DESTINATION lib
