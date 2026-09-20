@@ -109,6 +109,17 @@ target_link_libraries(vins_estimator PUBLIC camodocal ${OpenCV_LIBS} ${CERES_LIB
 add_library(vio_wrapper STATIC
   src/wrapper/vio_estimator.cpp
 )
+
+# ---------------------------------------------------------------------------
+# Phase 4B-1 shadow central backend (2021 fusion timeline, LIO-only round).
+# Design: docs/FUSION_TIMELINE_DESIGN.md + AGENT_PHASE4A review corrections.
+# ---------------------------------------------------------------------------
+find_package(GTSAM REQUIRED QUIET)
+add_library(fusion_2021 STATIC
+  src/fusion_2021/shadow_timeline.cpp
+)
+target_include_directories(fusion_2021 PUBLIC include)
+target_link_libraries(fusion_2021 PUBLIC gtsam)
 target_include_directories(vio_wrapper PUBLIC include)
 target_include_directories(vio_wrapper PUBLIC ${Sophus_INCLUDE_DIRS})
 target_link_libraries(vio_wrapper PUBLIC vins_estimator vio_lidar_depth)
@@ -146,6 +157,9 @@ if(BUILD_TESTING)
 
     ament_add_gtest(test_lidar_depth test/test_lidar_depth.cpp)
     target_link_libraries(test_lidar_depth vio_wrapper vio_lidar_depth vins_estimator camodocal Eigen3::Eigen)
+
+    ament_add_gtest(test_fusion_shadow test/test_fusion_shadow.cpp)
+    target_link_libraries(test_fusion_shadow fusion_2021 Eigen3::Eigen)
   endif()
 endif()
 

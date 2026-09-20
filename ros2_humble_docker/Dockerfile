@@ -46,35 +46,32 @@ RUN apt-get install -y libceres-dev
 RUN apt-get install -y python-tk python3-pip
 
 # Python 3.
-RUN pip3 install --upgrade pip
-RUN pip3 install --no-cache-dir numpy scipy matplotlib ipython opencv-python 
-RUN pip3 install --no-cache-dir pandas visdom scikit-image scikit-learn numba Pillow
-RUN pip3 install --no-cache-dir pyyaml pycryptodome bagpy Cython
+RUN pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade pip
+RUN pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir numpy scipy matplotlib ipython opencv-python 
+RUN pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir "setuptools<81" wheel && pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir --no-build-isolation pandas visdom scikit-image scikit-learn numba Pillow
+RUN pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir pyyaml pycryptodome bagpy Cython
 
 RUN apt-get -y install python3-rosdep python3-rosinstall python3-rosinstall-generator python3-wstool build-essential
 # RUN sudo rosdep init
-RUN rosdep update
-RUN pip3 install -U catkin_tools gym
+RUN export ROSDISTRO_INDEX_URL=https://mirrors.tuna.tsinghua.edu.cn/rosdistro/index-v4.yaml && rosdep update
+RUN pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple -U catkin_tools gym
 RUN apt-get -y install ros-humble-grid-map-msgs ros-humble-grid-map
 
 # Install livox SDK
 WORKDIR /root/
-RUN git clone https://github.com/Livox-SDK/Livox-SDK2.git
+COPY sodom_deps/Livox-SDK2 /root/Livox-SDK2
 WORKDIR /root/Livox-SDK2
 RUN mkdir build
 WORKDIR /root/Livox-SDK2/build
 RUN cmake .. && make -j2 && make install
 
 WORKDIR /root/
-RUN git clone http://github.com/strasdat/Sophus.git \
-    && cd Sophus && git checkout 97e7161 \
-    && mkdir build && cd build && cmake .. -DBUILD_TESTS=OFF \
+COPY sodom_deps/Sophus /root/Sophus
+RUN cd /root/Sophus && mkdir build && cd build && cmake .. -DBUILD_TESTS=OFF \
     && make -j8 && sudo make install
 WORKDIR /root/
-RUN git clone https://github.com/borglab/gtsam.git && \
-    cd gtsam && git checkout 4abef92 &&\
-    mkdir build && \
-    cd build && \
+COPY sodom_deps/gtsam /root/gtsam
+RUN cd /root/gtsam && mkdir -p build && cd build && \
     cmake  \
           -DGTSAM_USE_SYSTEM_EIGEN=ON \
           -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
@@ -85,10 +82,10 @@ RUN git clone https://github.com/borglab/gtsam.git && \
 
 RUN /bin/bash -c '. /opt/ros/humble/setup.bash;'
 
-RUN pip install rerun-sdk
-RUN pip install numpy==1.24.3 matplotlib==3.7.1
-RUN pip install --upgrade packaging
-RUN pip3 install torch --ignore-installed
+RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -i https://pypi.tuna.tsinghua.edu.cn/simple rerun-sdk
+RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple numpy==1.24.3 matplotlib==3.7.1
+RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade packaging
+RUN pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple torch --ignore-installed
 
 
 WORKDIR /root/ros2_ws

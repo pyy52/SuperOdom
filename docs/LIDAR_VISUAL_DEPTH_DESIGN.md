@@ -32,7 +32,7 @@ tracked features (PointCloud,10-20Hz)┘        (边界模块，禁止进 KLT)
 
 - **scan-stamp 档（默认）**：整 scan 视作 t_scan 采集，`max_age_sec` 严格门控（默认 0.12s）；
   不假装整 scan 同时采集——超过 max_age 的 scan 直接不入支撑池。
-- **point-time 档（Hesai 有 t_pt 时）**：对参与关联的点用 t_pt 做同一变换链下的相对时间修正
+- **point_rotation 档（Hesai 有 t_pt 时；命名按 Gate 冻结——rotation-only，非 full deskew）**：对参与关联的点用 t_pt 做同一变换链下的相对时间修正
   （用 IMU 传播位姿 T_W_B(t) 内插）。**Phase 3 实现顺序：先 scan-stamp 档跑通并量化 age 分布，
   point-time 档仅在 age 分布证明必要时启用**（参数 `time_mode`）。
 
