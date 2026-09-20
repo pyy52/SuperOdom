@@ -161,7 +161,7 @@ class VioEstimatorNode : public rclcpp::Node
                     // frame using integrated body rates. Rotation-only; the
                     // residual translation error is documented in the design.
                     std::deque<std::pair<int64_t, Eigen::Vector3d>> gyro_copy;
-                    if (time_mode_ == "point_time" && has_ts)
+                    if (time_mode_ == "point_rotation" && has_ts)
                     {
                         std::lock_guard<std::mutex> lk(gyro_mutex_);
                         gyro_copy = gyro_ring_;
@@ -171,7 +171,7 @@ class VioEstimatorNode : public rclcpp::Node
                     for (; ix != ix.end(); ++ix, ++iy, ++iz)
                     {
                         Eigen::Vector3d p(*ix, *iy, *iz);
-                        if (time_mode_ == "point_time" && has_ts)
+                        if (time_mode_ == "point_rotation" && has_ts)
                         {
                             const int64_t t_p =
                                 static_cast<int64_t>((*it_ts) * 1e9);
