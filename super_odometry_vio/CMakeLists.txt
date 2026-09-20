@@ -160,6 +160,11 @@ if(BUILD_TESTING)
 
     ament_add_gtest(test_fusion_shadow test/test_fusion_shadow.cpp)
     target_link_libraries(test_fusion_shadow fusion_2021 Eigen3::Eigen)
+
+    # Phase 4B-1 R3 independent adversarial falsification suite (test-only,
+    # branch audit/r3-falsification; no production source is modified).
+    ament_add_gtest(test_fusion_adversarial test/test_fusion_adversarial.cpp)
+    target_link_libraries(test_fusion_adversarial fusion_2021 Eigen3::Eigen)
   endif()
 endif()
 
