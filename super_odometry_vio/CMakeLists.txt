@@ -90,6 +90,11 @@ set(VINS_ESTIMATOR_SOURCES
   src/estimator/initial/initial_ex_rotation.cpp
   src/estimator/utility/utility.cpp
 )
+add_library(vio_lidar_depth STATIC
+  src/lidar_depth/lidar_depth_associator.cpp
+)
+target_include_directories(vio_lidar_depth PUBLIC include ${Sophus_INCLUDE_DIRS})
+target_link_libraries(vio_lidar_depth PUBLIC vins_estimator camodocal)
 add_library(vins_estimator STATIC ${VINS_ESTIMATOR_SOURCES})
 target_include_directories(vins_estimator PUBLIC
   src/estimator
@@ -106,7 +111,7 @@ add_library(vio_wrapper STATIC
 )
 target_include_directories(vio_wrapper PUBLIC include)
 target_include_directories(vio_wrapper PUBLIC ${Sophus_INCLUDE_DIRS})
-target_link_libraries(vio_wrapper PUBLIC vins_estimator)
+target_link_libraries(vio_wrapper PUBLIC vins_estimator vio_lidar_depth)
 
 # ROS2 estimator adapter: IMU + features in, odometry/health/CSV out.
 add_executable(camera_blackout_node src/ros2/camera_blackout_node.cpp)
@@ -114,7 +119,7 @@ ament_target_dependencies(camera_blackout_node rclcpp sensor_msgs)
 
 add_executable(vio_estimator_node src/ros2/estimator_node.cpp)
 ament_target_dependencies(vio_estimator_node
-  rclcpp sensor_msgs nav_msgs geometry_msgs std_msgs)
+  rclcpp sensor_msgs nav_msgs geometry_msgs std_msgs cv_bridge)
 target_link_libraries(vio_estimator_node vio_wrapper)
 
 install(DIRECTORY include/ DESTINATION include)
@@ -138,6 +143,9 @@ if(BUILD_TESTING)
 
     ament_add_gtest(test_vins_frames test/test_vins_frames.cpp)
     target_link_libraries(test_vins_frames vins_estimator camodocal Eigen3::Eigen)
+
+    ament_add_gtest(test_lidar_depth test/test_lidar_depth.cpp)
+    target_link_libraries(test_lidar_depth vio_wrapper vio_lidar_depth vins_estimator camodocal Eigen3::Eigen)
   endif()
 endif()
 

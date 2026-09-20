@@ -12,6 +12,8 @@
 #include <Eigen/Geometry>
 #include <sophus/se3.hpp>
 
+#include "super_odometry_vio/lidar_depth/lidar_depth_types.hpp"
+
 namespace super_odometry_vio {
 
 struct ImuSample
@@ -101,17 +103,10 @@ struct VioRelativePose
     VioQuality quality;
 };
 
-// Optional external metric depth (LiDAR association arrives in Phase 3).
-// Accepted through the estimator boundary but unused in Phase 2c.
-struct ExternalFeatureDepth
-{
-    int feature_id;
-    int64_t stamp_ns;
-    double depth_m;
-    double sigma_m;
-    int support_count;
-    bool valid;
-};
+// Optional external metric depth (LiDAR association, Phase 3) now lives in
+// lidar_depth/lidar_depth_types.hpp with the gate section 14 field contract;
+// re-exported here for the wrapper API.
+using lidar_depth::ExternalFeatureDepth;
 
 const char* toCString(VioHealthState s);
 

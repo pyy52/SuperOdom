@@ -1,0 +1,29 @@
+%YAML:1.0
+# HILTI22 exp14_basement_2 cam0 tracker settings.
+# Intrinsics: HILTI22 official calibration via OKVIS2-X config
+# (okvis2x_ws/src/OKVIS2-X/config/hilti22/okvis2-lidar.yaml, T_SC cam0 block),
+# which was verified on this machine against this exact dataset.
+# camodocal KANNALA_BRANDT: k2..k5 = kalibr/okvis k1..k4.
+image_topic: /alphasense/cam0/image_raw
+imu_topic: /alphasense/imu
+max_cnt: 150
+min_dist: 15
+image_width: 720
+image_height: 540
+freq: 0
+F_threshold: 1.0
+show_track: 0
+equalize: 1
+fisheye: 0
+
+model_type: KANNALA_BRANDT
+camera_name: hilti22_cam0
+projection_parameters:
+   k2: -0.036461810007375715
+   k3: -0.005444851637229522
+   k4: 0.0027544255985531532
+   k5: -0.0011093007039524076
+   mu: 350.3728036482598
+   mv: 350.4644910214914
+   u0: 367.5982315054545
+   v0: 253.84756624017055

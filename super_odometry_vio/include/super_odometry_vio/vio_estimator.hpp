@@ -20,6 +20,8 @@
 #include <string>
 #include <vector>
 
+#include "feature_manager.h"  // vendored core (public feature list for seeding)
+
 #include "super_odometry_vio/vio_types.hpp"
 
 namespace super_odometry_vio {
@@ -85,12 +87,39 @@ class VioEstimator
     void setStatePrediction(int64_t stamp_ns, const Eigen::Vector3d& v_W,
                             const Eigen::Vector3d& ba, const Eigen::Vector3d& bg);
     /// Optional external metric depths (LiDAR association, Phase 3).
-    /// Accepted at the boundary; the vendored core ignores them in Phase 2c.
-    void setExternalDepths(const std::vector<ExternalFeatureDepth>& depths);
+    /// Accepted at the boundary; consumed by seedExternalDepths.
+    void setExternalDepths(const std::vector<lidar_depth::ExternalFeatureDepth>& depths);
+
+    struct DepthSeedStats
+    {
+        int initialized{0};      // untriangulated feature got its first depth (gate 17A)
+        int repaired{0};         // invalid/negative depth reseeded (gate 17B)
+        int mature_skipped{0};   // stable triangulated depth NOT overwritten (gate 17C)
+        int not_found{0};        // feature id not in the window
+    };
+
+    /// Seeds/repairs VINS feature depths from external metric depths.
+    /// Vendor-zero-change: writes only through the public FeatureManager
+    /// `feature` list; triangulate() skips features with depth > 0, so a seed
+    /// is protected from being re-triangulated away. Only touches features
+    /// with estimated_depth <= 0 (never overwrites mature depth, gate 17C).
+    /// current_frame: only features first observed in this frame are seeded,
+    /// because VINS estimated_depth is defined along the START-frame ray
+    /// (docs section 9); cross-frame repairs would use the wrong ray and are
+    /// deferred until window poses are passed in.
+    static DepthSeedStats seedFeatureManagerDepths(
+        FeatureManager& f_manager,
+        const std::vector<lidar_depth::ExternalFeatureDepth>& depths,
+        int current_frame);
+
+    /// Applies pending external depths to the estimator's feature manager.
+    DepthSeedStats seedExternalDepths(
+        const std::vector<lidar_depth::ExternalFeatureDepth>& depths);
 
   private:
     struct Impl;
     Impl* impl_;
+    std::vector<lidar_depth::ExternalFeatureDepth> pending_depths_;
 
     mutable std::mutex output_mutex_;
     VioWrapperConfig config_;

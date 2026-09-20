@@ -85,6 +85,7 @@ struct VioEstimator::Impl
     int nonfinite_feature_drops = 0;
 
     std::deque<double> solve_ms;
+    DepthSeedStats last_seed_stats;
     void recordSolveTime(double ms)
     {
         solve_ms.push_back(ms);
@@ -236,6 +237,55 @@ bool VioEstimator::loadParameters(const std::string& config_file)
     return true;
 }
 
+VioEstimator::DepthSeedStats VioEstimator::seedFeatureManagerDepths(
+    FeatureManager& f_manager,
+    const std::vector<lidar_depth::ExternalFeatureDepth>& depths,
+    int current_frame)
+{
+    DepthSeedStats stats;
+    for (const auto& d : depths)
+    {
+        if (!d.valid || d.depth_z_m <= 0.0) continue;
+        bool found = false;
+        for (auto& it : f_manager.feature)
+        {
+            if (it.feature_id != d.feature_id) continue;
+            found = true;
+            if (it.start_frame != current_frame)
+            {
+                // Not a first-observation frame: seeding the current-frame
+                // Z_C onto the start-frame ray would be semantically wrong.
+                // Deferred until start-frame-ray depths are computed.
+                ++stats.mature_skipped;
+                break;
+            }
+            if (it.estimated_depth > 0.0)
+            {
+                // Mature triangulated depth: diagnostics only, never overwrite
+                // (gate 17C).
+                ++stats.mature_skipped;
+                break;
+            }
+            // estimated_depth holds metric depth along the start-frame ray;
+            // vector2double exports the inverse to para_Feature and
+            // triangulate() skips depth > 0, so the seed survives as the
+            // optimization initial value (gate 17A).
+            it.estimated_depth = d.depth_z_m;
+            ++stats.initialized;
+            break;
+        }
+        if (!found) ++stats.not_found;
+    }
+    return stats;
+}
+
+VioEstimator::DepthSeedStats VioEstimator::seedExternalDepths(
+    const std::vector<lidar_depth::ExternalFeatureDepth>& depths)
+{
+    return seedFeatureManagerDepths(impl_->est.f_manager, depths,
+                                    impl_->est.frame_count);
+}
+
 std::string VioEstimator::imuTopic() const
 {
     return IMU_TOPIC;  // vendored global from the settings file
@@ -363,6 +413,15 @@ void VioEstimator::processFeatures(const TrackedFeatureFrame& frame)
     header.stamp.sec = stamp_sec;
     const auto solve_start = std::chrono::steady_clock::now();
     p.est.processImage(toVinsImage(clean), header);
+    // Phase 3: consume external depths after this frame's triangulation so
+    // seeds are in place before the next solve's vector2double().
+    if (!p.external_depths.empty())
+    {
+        p.last_seed_stats =
+            seedFeatureManagerDepths(p.est.f_manager, p.external_depths,
+                                     p.est.frame_count);
+        p.external_depths.clear();
+    }
     p.recordSolveTime(std::chrono::duration<double, std::milli>(
                           std::chrono::steady_clock::now() - solve_start)
                           .count());
@@ -510,10 +569,10 @@ void VioEstimator::setStatePrediction(int64_t stamp_ns,
 }
 
 void VioEstimator::setExternalDepths(
-    const std::vector<ExternalFeatureDepth>& depths)
+    const std::vector<lidar_depth::ExternalFeatureDepth>& depths)
 {
     std::lock_guard<std::mutex> lock(output_mutex_);
-    impl_->external_depths = depths;  // Phase 3 will consume these
+    impl_->external_depths = depths;
 }
 
 }  // namespace super_odometry_vio

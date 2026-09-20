@@ -1,0 +1,37 @@
+%YAML:1.0
+# HILTI22 exp14_basement_2 estimator settings.
+# Extrinsic T_B_C = OKVIS2-X T_SC (cam0) verbatim; IMU noise = OKVIS2-X imu
+# section (sigma_*_c densities, HILTI22 official via OKVIS2-X config).
+# T_B_L for the depth associator is passed separately (lidar_depth section in
+# the launch node params; also documented in docs/PHASE3_DATASET_AUDIT.md).
+imu_topic: /alphasense/imu
+max_solver_time: 0.04
+max_num_iterations: 8
+keyframe_parallax: 10.0
+output_path: /results
+
+acc_n: 2.0e-2
+acc_w: 20.0e-3
+gyr_n: 20.0e-4
+gyr_w: 20.0e-5
+g_norm: 9.81007
+image_height: 540
+image_width: 720
+
+estimate_extrinsic: 0
+extrinsicRotation: !!opencv-matrix
+  rows: 3
+  cols: 3
+  dt: d
+  data: [0.007659110000000, 0.003215660000000, 0.999965500000000,
+         0.999928820000000, 0.009123650000000, -0.007688160000000,
+         -0.009148060000000, 0.999953210000000, -0.003145550000000]
+extrinsicTranslation: !!opencv-matrix
+  rows: 3
+  cols: 1
+  dt: d
+  data: [0.053090490000000, 0.045903280000000, -0.014702850000000]
+
+td: 0.0
+estimate_td: 0
+rolling_shutter: 0
