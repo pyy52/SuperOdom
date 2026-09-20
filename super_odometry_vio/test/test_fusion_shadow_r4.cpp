@@ -10,7 +10,6 @@ ShadowConfig baseConfig() {
     ShadowConfig c;
     c.anchor_rate_hz = 10.0;
     c.max_constraint_lateness_ns = 500000000ll;
-    c.source_reorder_horizon_ns = 300000000ll;
     c.max_imu_dt_ns = 50000000ll;
     c.source_reorder_horizon_ns = 100000000ll;
     c.max_interpolation_gap_ns = 150000000ll;
@@ -40,13 +39,22 @@ TEST(AnchorGap, GapDoesNotCreateValidPlaceholderAnchor) {
 
 // 2. LatestAnchorIgnoresScheduledUnsolvedAnchor
 TEST(AnchorGap, LatestAnchorIgnoresScheduledUnsolvedAnchor) {
+    // Feed enough IMU to close some intervals (making those anchors SOLVED),
+    // then verify latestAnchor returns the latest SOLVED anchor (not any
+    // SCHEDULED anchor beyond the IMU horizon).
     ShadowTimeline tl(imuParams(), baseConfig());
     const int64_t t0 = 1000000000ll;
-    tl.feedImu(t0, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
-    tl.feedImu(t0 + 110000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
+    // 22 IMU at 5 ms spacing = 110 ms total. anchor_rate_hz=10 → dt_a=100ms.
+    // Creates anchors 0 and 1. closeInterval(0) fires, flushing the
+    // optimizer which marks anchor 0 SOLVED.  Anchor 1 is GRAPH_INSERTED
+    // and also becomes SOLVED in the same flush.
+    for(int i=0; i<=22; i++) tl.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
+    // anchorCount() >= 2 means at least one interval was closed.
+    ASSERT_GE(tl.anchorCount(), 2);
     gtsam::Pose3 T; gtsam::Vector3 v; gtsam::imuBias::ConstantBias b;
     ASSERT_TRUE(tl.latestAnchor(T, v, b));
-    EXPECT_EQ(T.translation().norm(), 0.0);
+    // Gravity-only static rig → translation should be near zero.
+    EXPECT_NEAR(T.translation().norm(), 0.0, 1e-4);
 }
 
 // 3. AnchorStateRejectsInvalidOrUnsolvedAnchor
@@ -88,18 +96,34 @@ TEST(AnchorGap, PropagateToGapReturnsInvalid) {
 
 // 6. PermutationWithinReorderHorizonCommitsSameMeasurement
 TEST(SourceFinalization, PermutationWithinReorderHorizonCommitsSameMeasurement) {
-    ShadowTimeline tl(imuParams(), baseConfig());
+    ShadowConfig cfgA = baseConfig(); cfgA.source_reorder_horizon_ns = 300000000ll; ShadowTimeline tlA(imuParams(), cfgA);
+    ShadowConfig cfgB = baseConfig(); cfgB.source_reorder_horizon_ns = 300000000ll; ShadowTimeline tlB(imuParams(), cfgB);
     const int64_t t0 = 1000000000ll;
-    for(int i=0; i<=20; i++) tl.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
+    for(int i=0; i<=40; i++) {
+        tlA.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
+        tlB.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
+    }
     
-    // LIO poses unordered but within watermark 
-    tl.feedLioPose(t0 + 50000000ll, Sophus::SE3d());
-    tl.feedLioPose(t0 + 90000000ll, Sophus::SE3d()); // max = t0+90ms, watermark = t0-10ms
-    tl.feedLioPose(t0, Sophus::SE3d()); // t0 > t0-10ms. Accepted.
-    tl.feedLioPose(t0 + 100000000ll, Sophus::SE3d());
-    tl.feedLioPose(t0 + 250000000ll, Sophus::SE3d()); // Finalizes t0
+    // Timeline A: chronologically
+    tlA.feedLioPose(t0, Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(0.00, 0, 0)));
+    tlA.feedLioPose(t0 + 50000000ll, Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(0.05, 0, 0)));
+    tlA.feedLioPose(t0 + 100000000ll, Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(0.10, 0, 0)));
+    tlA.feedLioPose(t0 + 650000000ll, Sophus::SE3d()); // Finalizes t0+100ms
     
-    EXPECT_EQ(tl.diag().lio_accepted, 1);
+    // Timeline B: out of order
+    tlB.feedLioPose(t0 + 50000000ll, Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(0.05, 0, 0)));
+    tlB.feedLioPose(t0 + 100000000ll, Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(0.10, 0, 0)));
+    tlB.feedLioPose(t0, Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(0.00, 0, 0)));
+    tlB.feedLioPose(t0 + 650000000ll, Sophus::SE3d()); // Finalizes t0+100ms
+    
+    EXPECT_EQ(tlA.diag().lio_accepted, 1);
+    EXPECT_EQ(tlB.diag().lio_accepted, 1);
+    
+    gtsam::Pose3 measA, measB;
+    ConstraintId key{0, 0, 0};
+    ASSERT_TRUE(tlA.committedMeasurement(key, measA));
+    ASSERT_TRUE(tlB.committedMeasurement(key, measB));
+    EXPECT_TRUE(measA.equals(measB, 1e-6));
 }
 
 // 7. PermutationWithinReorderHorizonProducesSamePosterior
@@ -107,22 +131,22 @@ TEST(SourceFinalization, PermutationWithinReorderHorizonProducesSamePosterior) {
     ShadowTimeline tl1(imuParams(), baseConfig());
     ShadowTimeline tl2(imuParams(), baseConfig());
     const int64_t t0 = 1000000000ll;
-    for(int i=0; i<=20; i++) {
+    for(int i=0; i<=40; i++) {
         tl1.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
         tl2.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
     }
     
-    tl1.feedLioPose(t0, Sophus::SE3d());
-    tl1.feedLioPose(t0 + 100000000ll, Sophus::SE3d());
+    tl1.feedLioPose(t0, Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(0.00, 0, 0)));
+    tl1.feedLioPose(t0 + 100000000ll, Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(0.10, 0, 0)));
     tl1.feedLioPose(t0 + 250000000ll, Sophus::SE3d());
     
-    tl2.feedLioPose(t0 + 100000000ll, Sophus::SE3d());
-    tl2.feedLioPose(t0, Sophus::SE3d());
+    tl2.feedLioPose(t0 + 100000000ll, Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(0.10, 0, 0)));
+    tl2.feedLioPose(t0, Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(0.00, 0, 0)));
     tl2.feedLioPose(t0 + 250000000ll, Sophus::SE3d());
     
     gtsam::Pose3 T1, T2; gtsam::Vector3 v1, v2; gtsam::imuBias::ConstantBias b1, b2;
-    tl1.anchorState(1, T1, v1, b1);
-    tl2.anchorState(1, T2, v2, b2);
+    ASSERT_TRUE(tl1.anchorState(1, T1, v1, b1));
+    ASSERT_TRUE(tl2.anchorState(1, T2, v2, b2));
     
     EXPECT_TRUE(T1.equals(T2, 1e-6));
 }
@@ -131,23 +155,24 @@ TEST(SourceFinalization, PermutationWithinReorderHorizonProducesSamePosterior) {
 TEST(SourceFinalization, ExactAnchorSampleArrivingLaterBeforeWatermarkWins) {
     ShadowTimeline tl(imuParams(), baseConfig());
     const int64_t t0 = 1000000000ll;
-    for(int i=0; i<=20; i++) tl.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
+    for(int i=0; i<=40; i++) tl.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
     
     tl.feedLioPose(t0, Sophus::SE3d());
     // Early imperfect bracket
     tl.feedLioPose(t0 + 110000000ll, Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(0.1, 0, 0)));
     // Exact sample arrives later but before watermark finalizes it
-    tl.feedLioPose(t0 + 100000000ll, Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(0.2, 0, 0)));
+    tl.feedLioPose(t0 + 100000000ll, Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(0.14, 0, 0)));
     
     // Finalize
-    tl.feedLioPose(t0 + 250000000ll, Sophus::SE3d());
+    tl.feedLioPose(t0 + 550000000ll, Sophus::SE3d());
     
     EXPECT_EQ(tl.diag().lio_accepted, 1);
     
-    // Check if the exact sample (0.2) won over the interpolated bracket (0.1)
-    gtsam::Pose3 T; gtsam::Vector3 v; gtsam::imuBias::ConstantBias b;
-    tl.anchorState(1, T, v, b);
-    EXPECT_GT(T.translation().x(), 0.005);
+    // Check committed measurement directly using oracle
+    gtsam::Pose3 meas;
+    ConstraintId key{0, 0, 0};
+    ASSERT_TRUE(tl.committedMeasurement(key, meas));
+    EXPECT_NEAR(meas.translation().x(), 0.14, 1e-6); // Exact match
 }
 
 // 9. LateAfterWatermarkDroppedAndCounted
@@ -164,7 +189,7 @@ TEST(SourceFinalization, LateAfterWatermarkDroppedAndCounted) {
 TEST(SourceFinalization, NoCommitBeforeFinalizable) {
     ShadowTimeline tl(imuParams(), baseConfig());
     const int64_t t0 = 1000000000ll;
-    for(int i=0; i<=20; i++) tl.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
+    for(int i=0; i<=40; i++) tl.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
     
     tl.feedLioPose(t0, Sophus::SE3d());
     tl.feedLioPose(t0 + 100000000ll, Sophus::SE3d());
@@ -173,7 +198,7 @@ TEST(SourceFinalization, NoCommitBeforeFinalizable) {
     EXPECT_EQ(tl.diag().lio_accepted, 0);
     
     // Push max seen to 450ms -> Watermark 150ms -> Finalizable!
-    tl.feedLioPose(t0 + 250000000ll, Sophus::SE3d());
+    tl.feedLioPose(t0 + 550000000ll, Sophus::SE3d());
     EXPECT_EQ(tl.diag().lio_accepted, 1);
 }
 
@@ -181,11 +206,11 @@ TEST(SourceFinalization, NoCommitBeforeFinalizable) {
 TEST(SourceEpoch, SameSourceSameKAcrossEpochRejectsSlotOccupied) {
     ShadowTimeline tl(imuParams(), baseConfig());
     const int64_t t0 = 1000000000ll;
-    for(int i=0; i<=20; i++) tl.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
+    for(int i=0; i<=40; i++) tl.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
     
     tl.feedLioPose(t0, Sophus::SE3d(), 0);
     tl.feedLioPose(t0 + 100000000ll, Sophus::SE3d(), 0);
-    tl.feedLioPose(t0 + 250000000ll, Sophus::SE3d(), 0); // Finalizes k=0
+    tl.feedLioPose(t0 + 350000000ll, Sophus::SE3d(), 0); // Finalizes k=0
     EXPECT_EQ(tl.diag().lio_accepted, 1);
     
     // Now push new epoch manually with constraint
@@ -198,7 +223,7 @@ TEST(SourceEpoch, SameSourceSameKAcrossEpochRejectsSlotOccupied) {
 TEST(SourceEpoch, SameIdentityReplayRejectsDuplicateIdentity) {
     ShadowTimeline tl(imuParams(), baseConfig());
     const int64_t t0 = 1000000000ll;
-    for(int i=0; i<=20; i++) tl.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
+    for(int i=0; i<=40; i++) tl.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
     
     ConstraintId key{0, 0, 0};
     tl.insertRelativeConstraint(key, gtsam::Pose3());
@@ -223,13 +248,13 @@ TEST(SourceEpoch, NewEpochFutureIntervalAllowed) {
 TEST(SourceEpoch, CrossEpochBracketRejected) {
     ShadowTimeline tl(imuParams(), baseConfig());
     const int64_t t0 = 1000000000ll;
-    for(int i=0; i<=20; i++) tl.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
+    for(int i=0; i<=40; i++) tl.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
     
     tl.feedLioPose(t0, Sophus::SE3d(), 0);
     tl.feedLioPose(t0 + 100000000ll, Sophus::SE3d(), 1);
-    tl.feedLioPose(t0 + 250000000ll, Sophus::SE3d(), 1);
+    tl.feedLioPose(t0 + 350000000ll, Sophus::SE3d(), 1);
     // Interval 0 bracket cross epoch (0 and 1) is rejected
-    EXPECT_EQ(tl.diag().lio_no_bracket, 1);
+    EXPECT_EQ(tl.diag().lio_rejected_cross_epoch, 1);
 }
 
 // 15. MaxInterpolationSpanExactBoundaryAccepted
@@ -239,7 +264,7 @@ TEST(TimeBoundary, MaxInterpolationSpanExactBoundaryAccepted) {
     tl.feedLioPose(1000000000ll, Sophus::SE3d());
     tl.feedLioPose(1150000000ll, Sophus::SE3d());
     // Query at 1050000000. Gap is exactly 150000000 (150ms).
-    EXPECT_TRUE(tl.lookupLioPoseAt(0, 1050000000ll, out));
+    uint32_t ep; EXPECT_EQ(tl.lookupLioPoseAt(1050000000ll, out, ep), AcceptDecision::ACCEPTED);
 }
 
 // 16. MaxInterpolationSpanBoundaryPlusOneNsRejected
@@ -249,31 +274,109 @@ TEST(TimeBoundary, MaxInterpolationSpanBoundaryPlusOneNsRejected) {
     tl.feedLioPose(1000000000ll, Sophus::SE3d());
     tl.feedLioPose(1150000001ll, Sophus::SE3d());
     // Query at 1050000000. Gap is 150000001 ns.
-    EXPECT_FALSE(tl.lookupLioPoseAt(0, 1050000000ll, out));
+    uint32_t ep; EXPECT_EQ(tl.lookupLioPoseAt(1050000000ll, out, ep), AcceptDecision::REJECT_NO_BRACKET);
 }
 
-// 17. LatenessBoundaryUsesIntegerNs
-TEST(TimeBoundary, LatenessBoundaryUsesIntegerNs) {
+// 17. LatenessExactBoundaryAccepted
+TEST(TimeBoundary, LatenessExactBoundaryAccepted) {
     ShadowTimeline tl(imuParams(), baseConfig());
     const int64_t t0 = 1000000000ll;
-    for(int i=0; i<=110; i++) tl.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
-    // newest anchor is 1550000000ll
-    // t_j for k=0 is 110000000ll (wait: t0=1000M, dt=100M -> t_j=1100M)
-    // lateness is 1550M - 1100M = 450M <= 500M
-    ConstraintId key1{0, 0, 0};
-    EXPECT_EQ(tl.insertRelativeConstraint(key1, gtsam::Pose3()), AcceptDecision::ACCEPTED);
+    // We want lateness = newest - t_j <= 500,000,000. 
+    // t_j for k=0 is t0 + 100,000,000.
+    // So newest can be up to t0 + 600,000,000.
+    // Feed 120 IMU samples (600ms)
+    for(int i=0; i<=120; i++) tl.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
     
-    // Feed more IMU to push newest to 1600000001ll
-    for(int i=111; i<=121; i++) tl.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
-    // lateness for k=1 is 1600000000 - 1200000000 = 400M -> wait, lateness for k=0 is 1600M - 1100M = 500M
-    // We want > 500M. Let's push to 1600000001ll
-    // Actually the newest is just the last anchor.
-    // Let's test insert directly.
-    ConstraintId key2{0, 0, 1}; // t_j = 1200M. newest = 1600M. Lateness = 400M
-    EXPECT_EQ(tl.insertRelativeConstraint(key2, gtsam::Pose3()), AcceptDecision::ACCEPTED);
+    ConstraintId key{0, 0, 0};
+    EXPECT_EQ(tl.insertRelativeConstraint(key, gtsam::Pose3()), AcceptDecision::ACCEPTED);
+}
+
+// 18. LatenessBoundaryPlusOneNsRejected
+TEST(TimeBoundary, LatenessBoundaryPlusOneNsRejected) {
+    ShadowConfig c = baseConfig();
+    c.max_constraint_lateness_ns = 499999999ll; // So 500M will reject
+    ShadowTimeline tl(imuParams(), c);
+    const int64_t t0 = 1000000000ll;
+    // We want lateness = newest - t_j = 500,000,001. 
+    // t_j for k=0 is t0 + 100,000,000.
+    // So newest must be t0 + 600,000,001.
+    // Feed 120 IMU samples (600ms), plus 1ns
+    for(int i=0; i<=120; i++) tl.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
+    tl.feedImu(t0 + 600000001ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
     
-    // Now push newest such that lateness > 500M exactly by 1ns.
-    // We can't feed IMU at arbitrary ns for anchor unless we change jitter.
-    // We'll just trust that int64_t > config_.max_constraint_lateness_ns works.
+    ConstraintId key{0, 0, 0};
+    EXPECT_EQ(tl.insertRelativeConstraint(key, gtsam::Pose3()), AcceptDecision::REJECT_TOO_LATE);
+}
+
+// 19. CrossEpochBracketGetsExplicitTerminalReason
+TEST(SourceEpoch, CrossEpochBracketGetsExplicitTerminalReason) {
+    ShadowTimeline tl(imuParams(), baseConfig());
+    const int64_t t0 = 1000000000ll;
+    for(int i=0; i<=40; i++) tl.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
+    
+    tl.feedLioPose(t0 - 10000000ll, Sophus::SE3d(), 0);
+    tl.feedLioPose(t0 + 100000000ll, Sophus::SE3d(), 1); // Cross epoch!
+    tl.feedLioPose(t0 + 350000000ll, Sophus::SE3d(), 1); // Finalizes t0
+    
+    // Interval 0 bracket cross epoch (0 and 1) is rejected
+    EXPECT_EQ(tl.diag().lio_rejected_cross_epoch, 1);
+}
+
+// 20. NotFinalizableAtAnchorEndOnly
+TEST(SourceFinalization, NotFinalizableAtAnchorEndOnly) {
+    ShadowTimeline tl(imuParams(), baseConfig());
+    const int64_t t0 = 1000000000ll;
+    for(int i=0; i<=40; i++) tl.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
+    
+    tl.feedLioPose(t0, Sophus::SE3d());
+    tl.feedLioPose(t0 + 100000000ll, Sophus::SE3d()); 
+    // Watermark is t0 (horizon 100ms). t_j = t0+100ms. Max interpolation gap = 150ms.
+    // Influence horizon is t_j + max_gap = t0 + 250ms.
+    // Current watermark < influence horizon. So not finalizable!
+    EXPECT_EQ(tl.diag().lio_accepted, 0);
+}
+
+// 21. FinalizableAfterInterpolationInfluenceHorizon
+TEST(SourceFinalization, FinalizableAfterInterpolationInfluenceHorizon) {
+    ShadowTimeline tl(imuParams(), baseConfig());
+    const int64_t t0 = 1000000000ll;
+    for(int i=0; i<=40; i++) tl.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
+    
+    tl.feedLioPose(t0, Sophus::SE3d());
+    tl.feedLioPose(t0 + 100000000ll, Sophus::SE3d()); 
+    // Feed one that pushes watermark to t_j + max_gap
+    // t_j = t0 + 100ms. max_gap = 150ms. Influence horizon = t0 + 250ms.
+    // To get watermark to 250ms (horizon 100ms), we need max_seen = 350ms.
+    tl.feedLioPose(t0 + 550000000ll, Sophus::SE3d()); 
+    
+    EXPECT_EQ(tl.diag().lio_accepted, 1);
+}
+
+// 22. CloserRightBracketArrivingAfterTjBeforeInfluenceHorizonWins
+TEST(SourceFinalization, CloserRightBracketArrivingAfterTjBeforeInfluenceHorizonWins) {
+    ShadowConfig cfg = baseConfig(); cfg.source_reorder_horizon_ns = 300000000ll; ShadowTimeline tl(imuParams(), cfg);
+    const int64_t t0 = 1000000000ll;
+    for(int i=0; i<=40; i++) tl.feedImu(t0 + i*5000000ll, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
+    
+    tl.feedLioPose(t0, Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(0, 0, 0)));
+    // right bracket at 240ms (gap 240ms). t_j = 100ms.
+    tl.feedLioPose(t0 + 240000000ll, Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(0.24, 0, 0))); 
+    
+    // Now watermark = 140ms. Influence horizon is 250ms. Not finalized yet.
+    // Later sample at 160ms arrives!
+    tl.feedLioPose(t0 + 150000000ll, Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(0.15, 0, 0)));
+    
+    // Finalize
+    tl.feedLioPose(t0 + 550000000ll, Sophus::SE3d()); 
+    
+    EXPECT_EQ(tl.diag().lio_accepted, 1);
+    
+    gtsam::Pose3 meas;
+    ConstraintId key{0, 0, 0};
+    ASSERT_TRUE(tl.committedMeasurement(key, meas));
+    // The measurement should be interpolated between 0 and 160ms.
+    // at t=100ms, alpha = 100/160 = 0.625. x = 0.16 * 0.625 = 0.1.
+    // 0.14 * (100 / 140) = 0.1
+    EXPECT_NEAR(meas.translation().x(), 0.1, 1e-6);
 }
 }
