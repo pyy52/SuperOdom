@@ -158,7 +158,7 @@ if(BUILD_TESTING)
     ament_add_gtest(test_lidar_depth test/test_lidar_depth.cpp)
     target_link_libraries(test_lidar_depth vio_wrapper vio_lidar_depth vins_estimator camodocal Eigen3::Eigen)
 
-    ament_add_gtest(test_fusion_shadow test/test_fusion_shadow.cpp)
+    ament_add_gtest(test_fusion_shadow test/test_fusion_shadow.cpp test/test_fusion_shadow_r4.cpp)
     target_link_libraries(test_fusion_shadow fusion_2021 Eigen3::Eigen)
   endif()
 endif()

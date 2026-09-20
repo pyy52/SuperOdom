@@ -45,10 +45,11 @@ namespace fusion_2021 {
 struct ShadowConfig
 {
     double anchor_rate_hz{10.0};
-    double max_constraint_lateness_sec{0.5};
+    int64_t max_constraint_lateness_ns{500000000ll};
     std::string graph_retention_mode{"unbounded_shadow"};
-    double max_imu_dt_sec{0.05};         // malformed interval drop bound
-    double max_interpolation_gap_sec{0.15};
+    int64_t max_imu_dt_ns{50000000ll};         // malformed interval drop bound
+    int64_t max_interpolation_gap_ns{150000000ll};
+    int64_t source_reorder_horizon_ns{100000000ll};
     // LIO relative-factor nominal noise (Pose3 tangent: rot first, then trans)
     double lio_sigma_rot_rad{0.02};
     double lio_sigma_trans_m{0.05};
@@ -64,27 +65,54 @@ enum class AcceptDecision
     REJECT_NO_REF,
     REJECT_NO_BRACKET,
     REJECT_INNOVATION_TRANS,
-    REJECT_INNOVATION_ROT
+    REJECT_INNOVATION_ROT,
+    REJECT_SLOT_OCCUPIED,
+    REJECT_CROSS_EPOCH
 };
 const char* toCString(AcceptDecision d);
 
+enum class AnchorStatus {
+    SCHEDULED,
+    OPEN,
+    IMU_COMPLETE,
+    GRAPH_INSERTED,
+    SOLVED,
+    INVALID_GAP
+};
+
 // Source constraint identifier: (source, epoch, k)
 // SOURCE_LIO = 0, SOURCE_VIO = 1 per design section 5.
-struct ConstraintKey
+struct ConstraintId
 {
     uint8_t source{0};
     uint32_t epoch{0};
     int k{0};
 
-    bool operator<(const ConstraintKey& o) const
+    bool operator<(const ConstraintId& o) const
     {
         if (source != o.source) return source < o.source;
         if (epoch != o.epoch) return epoch < o.epoch;
         return k < o.k;
     }
-    bool operator==(const ConstraintKey& o) const
+    bool operator==(const ConstraintId& o) const
     {
         return source == o.source && epoch == o.epoch && k == o.k;
+    }
+};
+
+struct ConstraintSlot
+{
+    uint8_t source{0};
+    int k{0};
+
+    bool operator<(const ConstraintSlot& o) const
+    {
+        if (source != o.source) return source < o.source;
+        return k < o.k;
+    }
+    bool operator==(const ConstraintSlot& o) const
+    {
+        return source == o.source && k == o.k;
     }
 };
 
@@ -104,6 +132,9 @@ struct ShadowDiag
     int lio_rejected_innovation_rot{0};
     int lio_no_bracket{0};
     int lio_stale_skipped{0};
+    int lio_rejected_slot_occupied{0};
+    int lio_rejected_cross_epoch{0};
+    int lio_late_after_watermark{0};
     int pose_priors_added{0};
     int vel_priors_added{0};
     int bias_priors_added{0};
@@ -140,12 +171,12 @@ class ShadowTimeline
                      uint32_t lio_epoch = 0);
 
     // Look up or interpolate LIO source pose at a given timestamp within an epoch.
-    // Double-sided bracketing within max_interpolation_gap_sec, translation LERP, rotation SLERP.
+    // Double-sided bracketing within max_interpolation_gap_ns, translation LERP, rotation SLERP.
     bool lookupLioPoseAt(uint32_t epoch, int64_t stamp_ns,
                          Sophus::SE3d& T_W_L) const;
 
     // Insert a relative constraint with explicit key and one-shot deduplication.
-    AcceptDecision insertRelativeConstraint(const ConstraintKey& key,
+    AcceptDecision insertRelativeConstraint(const ConstraintId& key,
                                              const gtsam::Pose3& T_Bi_Bj);
 
     // Latest optimized anchor state + high-rate prediction to stamp_ns.
@@ -162,18 +193,24 @@ class ShadowTimeline
                      gtsam::imuBias::ConstantBias& bias) const
     {
         if (k < 0 || k >= static_cast<int>(anchor_stamps_.size())) return false;
+        if (anchor_status_[k] != AnchorStatus::SOLVED) return false;
         T_W_B = anchor_T_W_B_[k];
         v_W = anchor_v_W_[k];
         bias = anchor_bias_[k];
         return true;
     }
-    bool hasConstraint(const ConstraintKey& key) const
+    AnchorStatus anchorStatus(int k) const
+    {
+        if (k < 0 || k >= static_cast<int>(anchor_status_.size())) return AnchorStatus::INVALID_GAP;
+        return anchor_status_[k];
+    }
+    bool hasConstraint(const ConstraintId& key) const
     {
         return inserted_constraints_.count(key) > 0;
     }
     bool isIntervalLioConstrained(int k) const
     {
-        return lio_constrained_intervals_.count(k) > 0;
+        return occupied_slots_.count({0, k}) > 0;
     }
     size_t totalGraphFactors() const
     {
@@ -218,17 +255,21 @@ class ShadowTimeline
     std::vector<gtsam::Pose3> anchor_T_W_B_;
     std::vector<gtsam::Vector3> anchor_v_W_;
     std::vector<gtsam::imuBias::ConstantBias> anchor_bias_;
+    std::vector<AnchorStatus> anchor_status_;
+
     // IMMUTABLE IMU-only relative prediction per interval k (k -> k+1),
     // captured from the preintegrated measurements BEFORE any optimization
     // that could include source factors for this interval.
     std::vector<gtsam::Pose3> dT_imu_ref_;
 
     // one-shot immutable constraints: key (source, epoch, k)
-    std::set<ConstraintKey> inserted_constraints_;
-    std::set<int> lio_constrained_intervals_;
+    std::set<ConstraintId> inserted_constraints_;
+    std::set<ConstraintSlot> occupied_slots_;
 
     std::deque<LioSample> lio_buf_;
     uint32_t current_lio_epoch_{0};
+    int64_t max_seen_event_stamp_ns_{0};
+    int64_t watermark_ns_{0};
 
     Sophus::SE3d T_B_L_ = Sophus::SE3d();  // identity default (test rigs)
     bool T_B_L_set_{true};

@@ -20,6 +20,10 @@ ShadowConfig baseConfig()
 {
     ShadowConfig c;
     c.anchor_rate_hz = 10.0;
+    c.max_constraint_lateness_ns = 500000000ll;
+    c.max_imu_dt_ns = 50000000ll;
+    c.max_interpolation_gap_ns = 150000000ll;
+    c.source_reorder_horizon_ns = 100000000ll;
     return c;
 }
 
@@ -120,6 +124,7 @@ TEST(LioRelativeFactor, StaticRigAcceptedEndToEnd)
         Eigen::Quaterniond(Eigen::AngleAxisd(0.3, Eigen::Vector3d::UnitZ())),
         Eigen::Vector3d(1.0, 2.0, 0.5));
     for (int i = 0; i <= 15; ++i)
+    for (int i = 0; i <= 16; ++i)
         tl.feedLioPose(t0 + static_cast<int64_t>(i) * 100000000ll, T_W_L);
 
     EXPECT_EQ(tl.diag().lio_rejected_innovation_trans, 0);
@@ -229,6 +234,7 @@ TEST(LioGate, TooLateFactorRejected)
                              Eigen::Vector3d::Zero());
     tl.feedLioPose(t0 + 100000000ll, T_W_L);
     tl.feedLioPose(t0 + 200000000ll, T_W_L);
+    tl.feedLioPose(t0 + 300000000ll, T_W_L); // push watermark to 200M
     EXPECT_EQ(tl.diag().lio_rejected_too_late, 1);
     EXPECT_EQ(tl.diag().lio_accepted, 0);
 }
@@ -285,6 +291,7 @@ TEST(HighRateState, PropagationBetweenAnchors)
     ASSERT_TRUE(mid.valid);
     EXPECT_LT(mid.T_W_B.translation().norm(), 1e-3);
     const auto after = tl.propagateTo(t0 + 2000000000ll);
+    const auto after = tl.propagateTo(t0 + 1000000000ll);
     ASSERT_TRUE(after.valid);
     EXPECT_LT(after.T_W_B.translation().norm(), 1e-3);
 }
@@ -400,6 +407,7 @@ TEST(AnchorBoundaryIntegration, JitteredSamplesEndpointCaseB_TranslationVelocity
 }
 
 TEST(LioConstraintKey, DuplicateRejectionAndEpochSeparation)
+TEST(LioConstraintId, DuplicateRejectionAndEpochSeparation)
 {
     ShadowTimeline tl(imuParams(), baseConfig());
     const int64_t t0 = 14000000000ll;
@@ -408,6 +416,7 @@ TEST(LioConstraintKey, DuplicateRejectionAndEpochSeparation)
 
     const int k = 1;
     const ConstraintKey key_epoch0{0 /* SOURCE_LIO */, 0 /* epoch */, k};
+    const ConstraintId key_epoch0{0 /* SOURCE_LIO */, 0 /* epoch */, k};
 
     // 1. Initial valid insertion
     const AcceptDecision d1 = tl.insertRelativeConstraint(key_epoch0, gtsam::Pose3());
@@ -425,13 +434,19 @@ TEST(LioConstraintKey, DuplicateRejectionAndEpochSeparation)
 
     // 3. Different epoch on already-constrained interval -> REJECT_DUPLICATE (interval one-shot immutable)
     const ConstraintKey key_epoch1{0 /* SOURCE_LIO */, 1 /* epoch */, k};
+    // 3. Different epoch on already-constrained interval -> REJECT_SLOT_OCCUPIED (interval one-shot immutable)
+    const ConstraintId key_epoch1{0 /* SOURCE_LIO */, 1 /* epoch */, k};
     const AcceptDecision d3 = tl.insertRelativeConstraint(key_epoch1, gtsam::Pose3());
     EXPECT_EQ(d3, AcceptDecision::REJECT_DUPLICATE);
     EXPECT_EQ(tl.diag().lio_rejected_duplicate, 2);
+    EXPECT_EQ(d3, AcceptDecision::REJECT_SLOT_OCCUPIED);
+    EXPECT_EQ(tl.diag().lio_rejected_slot_occupied, 1);
+    EXPECT_EQ(tl.diag().lio_rejected_duplicate, 1);
     EXPECT_EQ(tl.diag().lio_accepted, 1);
 
     // 4. New epoch on unconstrained interval k=2 -> ACCEPTED
     const ConstraintKey key_epoch1_k2{0 /* SOURCE_LIO */, 1 /* epoch */, 2};
+    const ConstraintId key_epoch1_k2{0 /* SOURCE_LIO */, 1 /* epoch */, 2};
     const AcceptDecision d4 = tl.insertRelativeConstraint(key_epoch1_k2, gtsam::Pose3());
     EXPECT_EQ(d4, AcceptDecision::ACCEPTED);
     EXPECT_TRUE(tl.hasConstraint(key_epoch1_k2));
@@ -476,6 +491,7 @@ TEST(LioRelativeFactor, NonZeroLeverArmPureRotationBodyTranslationZero)
     // Feed LIO poses
     tl.feedLioPose(t0, T_W_L0);
     tl.feedLioPose(t0 + 100000000ll, T_W_L1);
+    tl.feedLioPose(t0 + 200000000ll, T_W_L1); // Push watermark to t0+100M
 
     EXPECT_EQ(tl.diag().lio_rejected_innovation_trans, 0);
     EXPECT_EQ(tl.diag().lio_rejected_innovation_rot, 0);
@@ -543,6 +559,7 @@ TEST(LioGate, OptimizerPosteriorUpdateDoesNotCorruptImuRef)
 
     // Insert a relative constraint on interval 0 that shifts the posterior (innovation 0.075m < 1.0m gate)
     const ConstraintKey key{0, 0, 0};
+    const ConstraintId key{0, 0, 0};
     const gtsam::Pose3 shift_factor(gtsam::Rot3(), gtsam::Point3(0.080, 0.0, 0.0));
     EXPECT_EQ(tl.insertRelativeConstraint(key, shift_factor), AcceptDecision::ACCEPTED);
 
@@ -595,10 +612,10 @@ TEST(AnchorBoundaryIntegration, NonConstantBoundarySampleOwnership)
 
 TEST(AnchorBoundaryIntegration, InvalidInternalGapDoesNotCloseInterval)
 {
-    // Reviewer finding B-05 / A2: Partial invalid internal gap (> max_imu_dt_sec)
+    // Reviewer finding B-05 / A2: Partial invalid internal gap (> max_imu_dt_ns)
     // must NOT close an interval with incomplete integration.
     ShadowConfig c = baseConfig();
-    c.max_imu_dt_sec = 0.02;  // 20 ms threshold
+    c.max_imu_dt_ns = 20000000ll;  // 20 ms threshold
     ShadowTimeline tl(imuParams(), c);
     const int64_t t0 = 21000000000ll;
     // Sample at t0
@@ -621,6 +638,9 @@ TEST(LioPoseBuffer, OutOfOrderFutureSampleDoesNotShadowEndpoint)
     // Reviewer finding B-01 / A4.1: Arrival-order independent right endpoint selection.
     // A future sample arriving before the true endpoint must NOT shadow the true endpoint.
     ShadowTimeline tl(imuParams(), baseConfig());
+    ShadowConfig c = baseConfig();
+    c.source_reorder_horizon_ns = 300000000ll; // large horizon to accept out-of-order 200ms
+    ShadowTimeline tl(imuParams(), c);
     const int64_t t0 = 22000000000ll;
     // Feed 0.2s of IMU to establish intervals 0 and 1
     feedStaticImu(tl, t0, 0.2, 200);
@@ -636,6 +656,7 @@ TEST(LioPoseBuffer, OutOfOrderFutureSampleDoesNotShadowEndpoint)
     tl.feedLioPose(t0, pose_0);                          // t = t0 (0.0s)
     tl.feedLioPose(t0 + 300000000ll, pose_future);       // t = t0 + 0.30s (arrives FIRST)
     tl.feedLioPose(t0 + 100000000ll, pose_1);            // t = t0 + 0.10s (arrives LATER)
+    tl.feedLioPose(t0 + 400000000ll, pose_future);       // Push watermark to t0+100M
 
     // Interval 0 [t0, t0 + 0.1s] must use pose_1 (identity), NOT pose_future (2.0m)
     EXPECT_TRUE(tl.isIntervalLioConstrained(0));
@@ -673,6 +694,7 @@ TEST(LioPoseBuffer, JitteredSamplesInterpolatedToAnchorTimes)
     tl.feedLioPose(t0 + 30000000ll, makePose(0.06, 0.015));
     tl.feedLioPose(t0 + 80000000ll, makePose(0.16, 0.040));
     tl.feedLioPose(t0 + 130000000ll, makePose(0.26, 0.065));
+    tl.feedLioPose(t0 + 200000000ll, makePose(0.40, 0.100)); // Push watermark to t0+100M
 
     // Verify lookupLioPoseAt directly
     Sophus::SE3d T_L0, T_L1;
