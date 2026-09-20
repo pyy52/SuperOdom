@@ -15,3 +15,5 @@ __pycache__
 *.pyw
 *.pyz
 *.pywz
+livox_ros_driver2/
+ros2_humble_docker/sodom_deps/

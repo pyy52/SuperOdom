@@ -22,6 +22,8 @@
 
 ## 📰 News
 
+- 🔍 **2026/09 — Phase 4B-1 架构审计交付**: 融合时间线（Shadow Timeline）后端闭环已完成。请查阅 [**外部专家审计交付指南 (docs/EXPERT_AUDIT_HANDOVER.md)**](./docs/EXPERT_AUDIT_HANDOVER.md) 与 [GitHub Release v4b1-audit-r3](https://github.com/pyy52/SuperOdom/releases/tag/v4b1-audit-r3)。
+
 - 🔔**2025/10** — Adapt super odometry on humanoid robot. Please check the "humanoid_ros2"  branch 
 
 - **2025/08** — Release SuperLoc code to achieve online degeneracy detection.
