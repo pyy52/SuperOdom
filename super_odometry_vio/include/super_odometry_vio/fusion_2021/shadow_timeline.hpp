@@ -73,8 +73,6 @@ const char* toCString(AcceptDecision d);
 
 enum class AnchorStatus {
     SCHEDULED,
-    OPEN,
-    IMU_COMPLETE,
     GRAPH_INSERTED,
     SOLVED,
     INVALID_GAP
@@ -170,10 +168,8 @@ class ShadowTimeline
     void feedLioPose(int64_t stamp_ns, const Sophus::SE3d& T_W_L,
                      uint32_t lio_epoch = 0);
 
-    // Look up or interpolate LIO source pose at a given timestamp within an epoch.
-    // Double-sided bracketing within max_interpolation_gap_ns, translation LERP, rotation SLERP.
-    bool lookupLioPoseAt(uint32_t epoch, int64_t stamp_ns,
-                         Sophus::SE3d& T_W_L) const;
+    // Look up or interpolate LIO source pose at a given timestamp.
+    AcceptDecision lookupLioPoseAt(int64_t stamp_ns, Sophus::SE3d& T_W_L, uint32_t& epoch_out) const;
 
     // Insert a relative constraint with explicit key and one-shot deduplication.
     AcceptDecision insertRelativeConstraint(const ConstraintId& key,
@@ -199,6 +195,14 @@ class ShadowTimeline
         bias = anchor_bias_[k];
         return true;
     }
+
+    bool committedMeasurement(const ConstraintId& id, gtsam::Pose3& out) const
+    {
+        auto it = committed_measurements_.find(id);
+        if (it == committed_measurements_.end()) return false;
+        out = it->second;
+        return true;
+    }
     AnchorStatus anchorStatus(int k) const
     {
         if (k < 0 || k >= static_cast<int>(anchor_status_.size())) return AnchorStatus::INVALID_GAP;
@@ -210,7 +214,7 @@ class ShadowTimeline
     }
     bool isIntervalLioConstrained(int k) const
     {
-        return occupied_slots_.count({0, k}) > 0;
+        return committed_slots_.count({0, k}) > 0;
     }
     size_t totalGraphFactors() const
     {
@@ -264,7 +268,9 @@ class ShadowTimeline
 
     // one-shot immutable constraints: key (source, epoch, k)
     std::set<ConstraintId> inserted_constraints_;
-    std::set<ConstraintSlot> occupied_slots_;
+    std::set<ConstraintSlot> committed_slots_;
+    std::set<ConstraintSlot> finalized_slots_;
+    std::map<ConstraintId, gtsam::Pose3> committed_measurements_;
 
     std::deque<LioSample> lio_buf_;
     uint32_t current_lio_epoch_{0};

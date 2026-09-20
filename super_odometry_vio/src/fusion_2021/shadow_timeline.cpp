@@ -68,7 +68,7 @@ void ShadowTimeline::feedImu(int64_t stamp_ns, const gtsam::Vector3& acc,
         anchor_T_W_B_.push_back(gtsam::Pose3());
         anchor_v_W_.push_back(zero_velocity);
         anchor_bias_.push_back(gtsam::imuBias::ConstantBias());
-        anchor_status_.push_back(AnchorStatus::SOLVED);
+        anchor_status_.push_back(AnchorStatus::GRAPH_INSERTED);
         dT_imu_ref_.push_back(gtsam::Pose3());  // unused slot for interval -1
         ++diag_.anchors_created;
 
@@ -280,10 +280,11 @@ AcceptDecision ShadowTimeline::insertRelativeConstraint(
     const int64_t t_j = anchor_stamps_[k + 1];
     const int64_t lateness_ns = newest - t_j;
     ConstraintSlot slot{key.source, k};
+    
     if (lateness_ns > config_.max_constraint_lateness_ns)
     {
         ++diag_.lio_rejected_too_late;
-        occupied_slots_.insert(slot);
+        finalized_slots_.insert(slot);
         return AcceptDecision::REJECT_TOO_LATE;
     }
 
@@ -293,18 +294,12 @@ AcceptDecision ShadowTimeline::insertRelativeConstraint(
         return AcceptDecision::REJECT_DUPLICATE;
     }
 
-    if (occupied_slots_.count(slot))
+    if (committed_slots_.count(slot))
     {
-        // If slot is occupied by a different epoch, cross epoch rejection
-        // Wait, if slot is occupied, does it matter if it's the same epoch?
-        // Actually, if identity is different but slot is occupied, it could be a different epoch.
-        // We can just return REJECT_SLOT_OCCUPIED for everything.
-        // Let's check what the test wants: SameSourceSameKAcrossEpochRejectsSlotOccupied.
         ++diag_.lio_rejected_slot_occupied;
         return AcceptDecision::REJECT_SLOT_OCCUPIED;
     }
 
-    // Innovation gate vs immutable IMU reference
     const gtsam::Pose3& ref = dT_imu_ref_[k];
     const gtsam::Vector6 e = gtsam::Pose3::Logmap(ref.between(T_Bi_Bj));
     const double rot_err = e.head<3>().norm();
@@ -312,30 +307,32 @@ AcceptDecision ShadowTimeline::insertRelativeConstraint(
     if (trans_err > config_.innovation_trans_m)
     {
         ++diag_.lio_rejected_innovation_trans;
-        occupied_slots_.insert(slot);
+        finalized_slots_.insert(slot);
         return AcceptDecision::REJECT_INNOVATION_TRANS;
     }
     if (rot_err > config_.innovation_rot_rad)
     {
         ++diag_.lio_rejected_innovation_rot;
-        occupied_slots_.insert(slot);
+        finalized_slots_.insert(slot);
         return AcceptDecision::REJECT_INNOVATION_ROT;
     }
 
-    // Insert BetweenFactor into graph
     graph_.push_back(gtsam::make_shared<gtsam::BetweenFactor<gtsam::Pose3>>(
         poseKey(k), poseKey(k + 1), T_Bi_Bj,
         makePoseNoise(config_.lio_sigma_rot_rad, config_.lio_sigma_trans_m)));
     graph_dirty_ = true;
+    
     inserted_constraints_.insert(key);
-    occupied_slots_.insert(slot);
+    committed_slots_.insert(slot);
+    finalized_slots_.insert(slot);
+    committed_measurements_[key] = T_Bi_Bj;
+    
     ++diag_.lio_accepted;
     flushOptimizer();
     return AcceptDecision::ACCEPTED;
 }
 
-bool ShadowTimeline::lookupLioPoseAt(uint32_t epoch, int64_t stamp_ns,
-                                     Sophus::SE3d& T_W_L) const
+AcceptDecision ShadowTimeline::lookupLioPoseAt(int64_t stamp_ns, Sophus::SE3d& T_W_L, uint32_t& epoch_out) const
 {
     const LioSample* s_exact = nullptr;
     const LioSample* s_before = nullptr;
@@ -343,8 +340,6 @@ bool ShadowTimeline::lookupLioPoseAt(uint32_t epoch, int64_t stamp_ns,
 
     for (const auto& s : lio_buf_)
     {
-        if (s.epoch != epoch) continue;
-
         if (s.stamp_ns == stamp_ns)
         {
             s_exact = &s;
@@ -352,35 +347,35 @@ bool ShadowTimeline::lookupLioPoseAt(uint32_t epoch, int64_t stamp_ns,
         }
         if (s.stamp_ns < stamp_ns)
         {
-            if (!s_before || s.stamp_ns > s_before->stamp_ns)
-            {
-                s_before = &s;
-            }
+            if (!s_before || s.stamp_ns > s_before->stamp_ns) s_before = &s;
         }
         else // s.stamp_ns > stamp_ns
         {
-            if (!s_after || s.stamp_ns < s_after->stamp_ns)
-            {
-                s_after = &s;
-            }
+            if (!s_after || s.stamp_ns < s_after->stamp_ns) s_after = &s;
         }
     }
 
     if (s_exact)
     {
         T_W_L = s_exact->T_W_L;
-        return true;
+        epoch_out = s_exact->epoch;
+        return AcceptDecision::ACCEPTED;
     }
 
     if (!s_before || !s_after)
     {
-        return false;
+        return AcceptDecision::REJECT_NO_BRACKET;
+    }
+
+    if (s_before->epoch != s_after->epoch)
+    {
+        return AcceptDecision::REJECT_CROSS_EPOCH;
     }
 
     const int64_t gap_ns = s_after->stamp_ns - s_before->stamp_ns;
-    std::cout << "gap: " << gap_ns << " max: " << config_.max_interpolation_gap_ns << std::endl; if (gap_ns <= 0 || gap_ns > config_.max_interpolation_gap_ns)
+    if (gap_ns <= 0 || gap_ns > config_.max_interpolation_gap_ns)
     {
-        return false;
+        return AcceptDecision::REJECT_NO_BRACKET;
     }
 
     const double alpha =
@@ -396,45 +391,55 @@ bool ShadowTimeline::lookupLioPoseAt(uint32_t epoch, int64_t stamp_ns,
     const Eigen::Quaterniond q_interp = q_before.slerp(alpha, q_after);
 
     T_W_L = Sophus::SE3d(q_interp, trans);
-    return true;
+    epoch_out = s_after->epoch;
+    return AcceptDecision::ACCEPTED;
 }
 
 void ShadowTimeline::tryInsertLioFactors()
 {
     if (last_closed_k_ < 0 || !T_B_L_set_) return;
 
-    // Advance next_lio_scan_k_ past contiguous intervals already constrained
     while (next_lio_scan_k_ <= last_closed_k_ &&
-           occupied_slots_.count({0, next_lio_scan_k_}))
+           finalized_slots_.count({0, next_lio_scan_k_}))
     {
         ++next_lio_scan_k_;
     }
 
-    // Only consecutive intervals X_k -> X_{k+1} in round 1 (review note).
     for (int k = next_lio_scan_k_; k <= last_closed_k_; ++k)
     {
-        if (occupied_slots_.count({0, k})) continue;
+        if (finalized_slots_.count({0, k})) continue;
         const int64_t t_i = anchor_stamps_[k];
         const int64_t t_j = anchor_stamps_[k + 1];
 
-        // Event-time finalization:
-        if (watermark_ns_ < t_j)
+        // Event-time finalization with influence horizon constraint:
+        if (watermark_ns_ < t_j + config_.max_interpolation_gap_ns)
         {
-            // Not finalizable yet, wait for more samples
             break;
         }
 
+        uint32_t epoch_i = 0;
+        uint32_t epoch_j = 0;
         Sophus::SE3d T_W_L_i, T_W_L_j;
-        if (!lookupLioPoseAt(current_lio_epoch_, t_i, T_W_L_i) ||
-            !lookupLioPoseAt(current_lio_epoch_, t_j, T_W_L_j))
+        
+        AcceptDecision dec_i = lookupLioPoseAt(t_i, T_W_L_i, epoch_i);
+        AcceptDecision dec_j = lookupLioPoseAt(t_j, T_W_L_j, epoch_j);
+        
+        if (dec_i == AcceptDecision::REJECT_CROSS_EPOCH || 
+            dec_j == AcceptDecision::REJECT_CROSS_EPOCH ||
+            (dec_i == AcceptDecision::ACCEPTED && dec_j == AcceptDecision::ACCEPTED && epoch_i != epoch_j))
         {
-            ++diag_.lio_no_bracket;
-            continue;  // try later? wait, if it's finalizable, we won't get more valid samples for this bracket, but let's stick to continue. Actually, if watermark is past t_j, and we don't have a bracket, we NEVER will. So we could mark it REJECT_NO_BRACKET. But the prompt says "commit exactly once or reject with reason". Let's insert an invalid slot to not get stuck if we want, but the tests might just check diag. We'll leave it as continue (it will retry and fail repeatedly unless we advance). Wait, if we never get a bracket, `next_lio_scan_k_` won't advance. This might be fine for this phase.
-            // Let's actually add the slot to occupied so we don't spin? No, the original code had `continue;`.
+            ++diag_.lio_rejected_cross_epoch;
+            finalized_slots_.insert({0, k});
+            continue;
         }
 
-        // Body-frame differencing (gate-review correction 2):
-        // T_W_B = T_W_L * inverse(T_B_L), then T_Bi_Bj = between(T_W_Bi, T_W_Bj).
+        if (dec_i != AcceptDecision::ACCEPTED || dec_j != AcceptDecision::ACCEPTED)
+        {
+            ++diag_.lio_no_bracket;
+            finalized_slots_.insert({0, k});
+            continue;
+        }
+
         const Sophus::SE3d T_W_Bi = T_W_L_i * T_B_L_.inverse();
         const Sophus::SE3d T_W_Bj = T_W_L_j * T_B_L_.inverse();
         const gtsam::Pose3 T_W_Bi_g(
@@ -445,12 +450,15 @@ void ShadowTimeline::tryInsertLioFactors()
             gtsam::Point3(T_W_Bj.translation()));
         const gtsam::Pose3 T_Bi_Bj = T_W_Bi_g.between(T_W_Bj_g);
 
-        const ConstraintId key{0 /* SOURCE_LIO */, current_lio_epoch_, k};
-        insertRelativeConstraint(key, T_Bi_Bj);
+        const ConstraintId key{0 /* SOURCE_LIO */, epoch_j, k};
+        AcceptDecision dec = insertRelativeConstraint(key, T_Bi_Bj);
+        
+        // If not accepted but NOT duplicate, it's rejected terminal (since too_late, slots, innovations are finalized).
+        // The slot is already marked finalized inside insertRelativeConstraint if it was a terminal failure.
     }
 
     while (next_lio_scan_k_ <= last_closed_k_ &&
-           occupied_slots_.count({0, next_lio_scan_k_}))
+           finalized_slots_.count({0, next_lio_scan_k_}))
     {
         ++next_lio_scan_k_;
     }
