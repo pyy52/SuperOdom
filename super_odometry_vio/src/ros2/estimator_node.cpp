@@ -54,6 +54,27 @@ Sophus::SE3d se3FromArray(const std::vector<double>& a)
                         Eigen::Vector3d(m.block<3, 1>(0, 3)));
 }
 
+// Integrates buffered body rates from t_from to t_to (trapezoid). Returns
+// the incremental rotation vector expressed in the body frame; empty ring or
+// out-of-covered interval yields the closest-coverage integral (bounded).
+Eigen::Vector3d integrateGyro(
+    const std::deque<std::pair<int64_t, Eigen::Vector3d>>& ring, int64_t t_from,
+    int64_t t_to)
+{
+    Eigen::Vector3d sum = Eigen::Vector3d::Zero();
+    if (ring.size() < 2 || t_to <= t_from) return sum;
+    for (size_t i = 1; i < ring.size(); ++i)
+    {
+        const double t0 = ring[i - 1].first * 1e-9;
+        const double t1 = ring[i].first * 1e-9;
+        const double lo = std::max(t0, t_from * 1e-9);
+        const double hi = std::min(t1, t_to * 1e-9);
+        if (hi <= lo) continue;
+        sum += 0.5 * (ring[i - 1].second + ring[i].second) * (hi - lo);
+    }
+    return sum;
+}
+
 }  // namespace
 
 class VioEstimatorNode : public rclcpp::Node
@@ -97,6 +118,8 @@ class VioEstimatorNode : public rclcpp::Node
             this->declare_parameter<double>("lidar_depth.max_depth_spread_m", 0.3);
         dcfg.max_relative_depth_spread =
             this->declare_parameter<double>("lidar_depth.max_relative_depth_spread", 0.10);
+        time_mode_ = this->declare_parameter<std::string>(
+            "lidar_depth.time_mode", "scan_stamp");
         if (dcfg.enable)
         {
             const std::string camera_config_file = this->declare_parameter<std::string>(
@@ -127,9 +150,39 @@ class VioEstimatorNode : public rclcpp::Node
                     scan.stamp_ns = stampToNs(msg->header.stamp);
                     sensor_msgs::PointCloud2ConstIterator<float> ix(*msg, "x"),
                         iy(*msg, "y"), iz(*msg, "z");
+                    const bool has_ts = std::any_of(
+                        msg->fields.begin(), msg->fields.end(),
+                        [](const sensor_msgs::msg::PointField& f)
+                        { return f.name == "timestamp"; });
                     scan.points_lidar.reserve(msg->width * msg->height);
+
+                    // Per-point-time deskew (gate: B1 tier): rotate each point
+                    // from its capture-time body frame to the scan reference
+                    // frame using integrated body rates. Rotation-only; the
+                    // residual translation error is documented in the design.
+                    std::deque<std::pair<int64_t, Eigen::Vector3d>> gyro_copy;
+                    if (time_mode_ == "point_time" && has_ts)
+                    {
+                        std::lock_guard<std::mutex> lk(gyro_mutex_);
+                        gyro_copy = gyro_ring_;
+                    }
+                    sensor_msgs::PointCloud2ConstIterator<double>
+                        it_ts(*msg, "timestamp");
                     for (; ix != ix.end(); ++ix, ++iy, ++iz)
-                        scan.points_lidar.emplace_back(*ix, *iy, *iz);
+                    {
+                        Eigen::Vector3d p(*ix, *iy, *iz);
+                        if (time_mode_ == "point_time" && has_ts)
+                        {
+                            const int64_t t_p =
+                                static_cast<int64_t>((*it_ts) * 1e9);
+                            const Eigen::Vector3d dtheta =
+                                integrateGyro(gyro_copy, t_p, scan.stamp_ns);
+                            // rotate p from capture-time frame to reference
+                            p = Sophus::SO3d::exp(dtheta).matrix() * p;
+                        }
+                        ++it_ts;
+                        scan.points_lidar.emplace_back(p);
+                    }
                     std::lock_guard<std::mutex> lk(assoc_mutex_);
                     associator_->pushScan(std::move(scan));
                 });
@@ -171,6 +224,11 @@ class VioEstimatorNode : public rclcpp::Node
                     msg->linear_acceleration.z;
                 s.gyro << msg->angular_velocity.x, msg->angular_velocity.y,
                     msg->angular_velocity.z;
+                {
+                    std::lock_guard<std::mutex> lk(gyro_mutex_);
+                    gyro_ring_.emplace_back(s.stamp_ns, s.gyro);
+                    while (gyro_ring_.size() > 800) gyro_ring_.pop_front();
+                }
                 wrapper_.feedImu(s);
                 {
                     std::lock_guard<std::mutex> lk(work_mutex_);
@@ -431,6 +489,9 @@ class VioEstimatorNode : public rclcpp::Node
         int projected{0};
     } total_;
     std::map<lidar_depth::RejectReason, int> total_rejects_;
+    std::string time_mode_{"scan_stamp"};
+    std::mutex gyro_mutex_;
+    std::deque<std::pair<int64_t, Eigen::Vector3d>> gyro_ring_;
     int frames_since_stats_{0};
 
     std::thread worker_;

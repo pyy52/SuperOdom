@@ -42,6 +42,7 @@ def generate_launch_description():
         "lidar_depth.image_topic": "/alphasense/cam0/image_raw",
         "lidar_depth.T_B_L": T_B_L,
         "lidar_depth.max_scans": 3,
+        "lidar_depth.time_mode": os.environ.get("VIO_LIDAR_TIME_MODE", "scan_stamp"),
         "lidar_depth.max_age_sec": 0.12,
         "lidar_depth.debug_overlay_dir": overlay_dir,
         "lidar_depth.debug_overlay_every": 60,
