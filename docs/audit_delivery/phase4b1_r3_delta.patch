@@ -1,0 +1,765 @@
+diff --git a/docs/PHASE_4B1_FALSIFICATION_REPORT.md b/docs/PHASE_4B1_FALSIFICATION_REPORT.md
+index 111caf1..673a6a2 100644
+--- a/docs/PHASE_4B1_FALSIFICATION_REPORT.md
++++ b/docs/PHASE_4B1_FALSIFICATION_REPORT.md
+@@ -1,200 +1,151 @@
+ # PHASE 4B-1 Falsification & Hardening Report
+ 
+-**Candidate Baseline Commit:** `4c4006dc63cfcfbf67e3a9d94fc2d4090ea00a2a` (`4c4006d`)  
++**Baseline Commit:** `7a9a943c30947d771b5cb8fc7d2ba28e14350ce2`  
++**Candidate Baseline Commit (in tree):** `4c4006d587e804b91e15414b4119f10350bbb85a`  
++**Superseded Planning SHA:** `4c4006dc63cfcfbf67e3a9d94fc2d4090ea00a2a` (superseded placeholder in early task notes; actual git object is `4c4006d587e804b91e15414b4119f10350bbb85a`)  
+ **Audit Target:** Super Odometry Phase 4B-1 Shadow Central Backend (2021 Fusion Timeline, LIO-only round)  
+ **Status:** **READY FOR MASTER REVIEW**
+ 
+ ---
+ 
+-## 1. Executive Summary
++## 1. Commit Provenance & Test Accounting Disambiguation
+ 
+-An adversarial contract falsification audit was conducted against candidate commit `4c4006d`. The audit evaluated all signed invariant rules from `docs/FUSION_TIMELINE_DESIGN.md` and Phase 4A gate decisions:
+-1. Immutable IMU relative prediction reference $dT\_imu\_ref(k, k+1)$ under non-zero initial velocity.
+-2. Exact measurement-time anchor boundary integration under timestamp jitter.
+-3. One-shot constraint deduplication with exact $(source, epoch, k)$ key identity.
+-4. Correct lever-arm normalization under non-zero translation and pure rotation.
+-5. Single initial gauge priors without recurring injection.
+-6. Unbounded shadow retention without premature 32-anchor eviction.
+-7. Arrival-order optimizer invariance of the reference pose.
++To preserve rigorous audit reproducibility, the commits and their respective validation records are strictly partitioned:
+ 
+-### Audit Findings Summary
+-- **Critical Bugs Proven:** 3 signed-contract violations and 1 optimizer estimate refresh bug were mathematically and experimentally proven on candidate `4c4006d`.
+-- **Hardening Fixes Implemented:** Minimal, non-architectural invariant fixes applied directly to `super_odometry_vio/include/super_odometry_vio/fusion_2021/shadow_timeline.hpp` and `super_odometry_vio/src/fusion_2021/shadow_timeline.cpp`.
+-- **Test Suite Expansion:** Expanded `test_fusion_shadow` from 10 tests to 18 comprehensive tests.
+-- **Verification:** 100% green across all 50 workspace test records (44 gtest unit tests).
++| Milestone / State | 40-Character Commit SHA | Compare URL (vs Baseline) | Test Suite Accounting |
++|---|---|---|---|
++| **Phase 4A Baseline** | `7a9a943c30947d771b5cb8fc7d2ba28e14350ce2` | Baseline origin | N/A (Design doc only) |
++| **Phase 4B-1 Candidate** | `4c4006d587e804b91e15414b4119f10350bbb85a` | [7a9a943...4c4006d](https://github.com/pyy52/SuperOdom/compare/7a9a943c30947d771b5cb8fc7d2ba28e14350ce2...4c4006d587e804b91e15414b4119f10350bbb85a) | **41 test records** (10 shadow fusion tests, 31 other) |
++| **Phase 4B-1 Hardened (R2)** | `70617e5896b6c5533107f8d712d043ff9caee48d` | [7a9a943...70617e5](https://github.com/pyy52/SuperOdom/compare/7a9a943c30947d771b5cb8fc7d2ba28e14350ce2...70617e5896b6c5533107f8d712d043ff9caee48d) | **50 test records** (18 shadow fusion tests, 32 other) |
++| **Phase 4B-1 Hardened (R3 / Final)** | HEAD | Compare URL on GitHub | **56 test records** (24 shadow fusion tests, 32 other) |
+ 
+----
++> [!NOTE]
++> Early task notes referenced `4c4006dc63cfcfbf67e3a9d94fc2d4090ea00a2a`. The actual git object created in the repository and pushed to GitHub is `4c4006d587e804b91e15414b4119f10350bbb85a` (both share prefix `4c4006d`). All audits and diffs operate strictly on the genuine git object `4c4006d587e804b91e15414b4119f10350bbb85a`.
+ 
+-## 2. Proven Bugs & Numerical Evidence
++---
+ 
+-### Bug 1: `dT_imu_ref_[k]` Disregarded Initial Velocity & Gravity Rotation
+-- **Contract Rule:** "Every anchor interval stores an immutable IMU-only relative prediction $dT\_imu\_ref(k, k+1)$, captured BEFORE any optimization update touches the interval."
+-- **Candidate Defect (`4c4006d`):**  
+-  In `shadow_timeline.cpp` line 151:
+-  ```cpp
+-  dT_imu_ref_[k] = gtsam::Pose3(pim.deltaRij(), pim.deltaPij());
+-  ```
+-  `pim.deltaPij()` evaluates purely $\iint R_t a_t dt^2$. Under non-zero velocity $v_k \neq 0$, the body translation from $B_k$ to $B_{k+1}$ is $R_k^T (p_{k+1} - p_k) = \Delta p_{ij} + R_k^T (v_k \Delta t + \frac{1}{2} g \Delta t^2)$. Candidate `4c4006d` discarded $v_k \Delta t$.
+-- **Adversarial Audit Proof:**  
+-  In `TEST(ImuReference, NonZeroVelocityRelativePredictionOracle)`:
+-  - $v_1 = 0.20\,\text{m/s}$ after interval 0 acceleration.
+-  - Interval 1 acceleration $a = 2.0\,\text{m/s}^2, \Delta t = 0.1\,\text{s}$.
+-  - Preintegrated delta position: $\Delta p_{ij} = 0.01000\,\text{m}$.
+-  - Oracle true relative translation: $0.03000\,\text{m}$.
+-  - Candidate `4c4006d` stored reference: $0.01000\,\text{m}$.
+-  - **Discrepancy / Error:** $-0.02000\,\text{m} = -v_1 \Delta t$. (Test FAILED on candidate `4c4006d`).
+-- **Hardening Fix:**  
+-  Compute the oracle prediction via `NavState`:
+-  ```cpp
+-  const gtsam::NavState prev(anchor_T_W_B_[k], anchor_v_W_[k]);
+-  const gtsam::NavState predicted = pim.predict(prev, anchor_bias_[k]);
+-  dT_imu_ref_[k] = anchor_T_W_B_[k].between(predicted.pose());
+-  ```
+-- **Post-Fix Result:** Stored reference = $0.03000\,\text{m}$, delta error = $0.00000\,\text{m}$ (PASSED).
++## 2. Executive Summary
++
++An adversarial contract falsification audit and two rounds of independent reviewer source audits were conducted against the Phase 4B-1 shadow backend. All signed invariant rules from `docs/FUSION_TIMELINE_DESIGN.md` and Phase 4A gate decisions were audited:
++1. Immutable IMU relative prediction reference $dT\_imu\_ref(k, k+1)$ under non-zero initial velocity (A1).
++2. Exact measurement-time anchor boundary integration under timestamp jitter with right-sample ZOH policy (A2).
++3. Anchor-time source pose interpolation (translation LERP + rotation SLERP) and arrival-order independent bracketing (A3/A4/B-01/B-03).
++4. Monotonic source epoch handling and stale sample rejection (A4/B-02).
++5. Measurement-time high-rate propagation with binary-search historical anchor selection (B-04).
++6. Continuous interval IMU coverage tracking without partial-gap closures (B-05).
++7. One-shot constraint deduplication with exact $(source, epoch, k)$ key identity (A4).
++8. Lever-arm normalization under non-zero translation and pure rotation (A3).
++9. Single initial gauge priors without recurring injection (A7).
++10. Unbounded shadow retention without premature 32-anchor eviction (A7).
++11. Arrival-order optimizer invariance of the reference pose (A5).
+ 
+ ---
+ 
+-### Bug 2: Anchor Boundary Endpoint Truncation Under IMU Jitter
+-- **Contract Rule:** "Exact measurement-time grid $t_k = t_0 + k / \text{anchor\_rate\_hz}$. Continuous, gapless preintegration without invented dt fallbacks."
+-- **Candidate Defect (`4c4006d`):**  
+-  In `closeInterval(k)`:
++## 3. Review Findings & Mathematical / Architectural Resolution
++
++### B-01: Arrival-Order Independent LIO Endpoint Selection
++- **Defect:** In candidate and initial hardened code, right endpoint search used `if (s.stamp_ns >= t_j && !s_j) s_j = &s;`, which selected the first-arrived sample after $t_j$. A future sample arriving before the true endpoint permanently shadowed the correct endpoint.
++- **Resolution:** Replaced raw sample search with `lookupLioPoseAt(epoch, stamp_ns, T_W_L)` which finds $s_{before}$ (maximum stamp $\le t$) and $s_{after}$ (minimum stamp $\ge t$), guaranteeing arrival-order independence regardless of buffer insertion order.
++- **Discriminating Test:** `LioPoseBuffer.OutOfOrderFutureSampleDoesNotShadowEndpoint` feeds $t_0$, then future sample $t_0 + 0.30\text{s}$ (with large $2.0\text{m}$ offset), then true endpoint $t_0 + 0.10\text{s}$. Verifies interval 0 uses $t_0 + 0.10\text{s}$ and passes the innovation gate.
++
++### B-02: Monotonic Source Epoch & Stale Sample Dropping
++- **Defect:** In `feedLioPose`, `current_lio_epoch_ = lio_epoch;` was assigned unconditionally. A delayed sample from an old epoch rolled `current_lio_epoch_` backward.
++- **Resolution:** Enforced monotonic epoch updates:
+   ```cpp
+-  if (s.stamp_ns < t_i || s.stamp_ns > t_j) continue;
++  if (lio_epoch < current_lio_epoch_) {
++      ++diag_.lio_stale_skipped;
++      return;
++  }
++  if (lio_epoch > current_lio_epoch_) {
++      current_lio_epoch_ = lio_epoch;
++  }
+   ```
+-  When IMU samples have realistic sensor jitter (e.g. 200 Hz with timestamps straddling $t_j = 0.100\,\text{s}$, e.g. at $0.096\,\text{s}$ and $0.102\,\text{s}$), the sample at $0.102\,\text{s}$ was skipped. Integration ceased at $0.096\,\text{s}$, losing $0.004\,\text{s}$ (4%) of integrated angular velocity and acceleration. Over 1 second, up to $50\,\text{ms}$ was discarded.
+-- **Adversarial Audit Proof:**
+-  - **Case A (Rotation):** $\omega_z = 1.0\,\text{rad/s}$ constant yaw rate.
+-    * Expected yaw over $0.100\,\text{s}$: $0.10000\,\text{rad}$.
+-    * Candidate pre-fix: $0.09600\,\text{rad}$ ($4.0\%$ error).
+-    * Post-fix clamped ZOH: $0.10000\,\text{rad}$ (error $< 10^{-6}$).
+-  - **Case B (Translation/Velocity):** $a_x = 2.0\,\text{m/s}^2$ constant acceleration.
+-    * Expected velocity: $v_1 = a \Delta t = 0.20000\,\text{m/s}$.
+-    * Expected translation: $p_1 = \frac{1}{2} a \Delta t^2 = 0.01000\,\text{m}$.
+-    * Candidate pre-fix: $v_1 = 0.19200\,\text{m/s}, p_1 = 0.00922\,\text{m}$.
+-    * Post-fix clamped ZOH: $v_1 = 0.20000\,\text{m/s}, p_1 = 0.01000\,\text{m}$ (error $< 10^{-6}$).
+-- **Hardening Fix:**  
+-  Under Zero-Order Hold, clamp the boundary at $t_j$:
++- **Discriminating Test:** `SourceEpoch.DelayedOldEpochCannotRollbackCurrentEpoch` feeds epoch 0, advances to epoch 1, then feeds delayed epoch 0. Verifies `lio_stale_skipped` increments, epoch does not roll back, and no stale factor enters the graph.
++
++### B-03: Source Pose Interpolation at Anchor Timestamps
++- **Defect:** The implementation previously picked raw bracketing samples rather than evaluating source pose at exact anchor times $t_i, t_j$ as signed in `FUSION_TIMELINE_DESIGN.md:87-95`.
++- **Resolution:** Implemented `lookupLioPoseAt(epoch, stamp_ns, T_W_L)`:
++  - Exact match shortcut when $s.\text{stamp\_ns} == \text{stamp\_ns}$.
++  - Double-sided bracketing within `config_.max_interpolation_gap_sec`.
++  - Normalized fraction $\alpha = \frac{t - t_{before}}{t_{after} - t_{before}}$.
++  - Translation linear interpolation: $p = (1-\alpha) p_{before} + \alpha p_{after}$.
++  - Rotation spherical linear interpolation: $q = q_{before}.\text{slerp}(\alpha, q_{after})$.
++  - `tryInsertLioFactors()` interpolates at both $t_i$ and $t_j$.
++- **Discriminating Test:** `LioPoseBuffer.JitteredSamplesInterpolatedToAnchorTimes` feeds jittered samples ($-0.02\text{s}, +0.03\text{s}, +0.08\text{s}, +0.13\text{s}$) around anchors $0.0\text{s}$ and $0.10\text{s}$. Verifies exact interpolated anchor poses ($0.0\text{m}$ and $0.20\text{m}$, $0.05\text{rad}$) and factor acceptance.
++
++### B-04: High-Rate State Historical Propagation
++- **Defect:** `propagateTo(stamp_ns)` hardcoded anchor index $k = \text{anchor\_stamps\_}.\text{size}() - 1$. Querying a historical timestamp (e.g. $t_0 + 0.55\text{s}$ when anchors exist up to $t_0 + 1.0\text{s}$) integrated from anchor 10 instead of anchor 5.
++- **Resolution:** Implemented binary search anchor selection:
+   ```cpp
+-  else // s.stamp_ns >= t_j
+-  {
+-      const double dt = static_cast<double>(t_j - t_prev) * 1e-9;
+-      if (dt > 0.0) {
+-          if (dt <= config_.max_imu_dt_sec) {
+-              pim.integrateMeasurement(s.acc, s.gyro, dt);
+-              bracketed = true;
+-          } else {
+-              ++diag_.imu_dropped;
+-          }
+-      }
+-      t_prev = t_j;
+-      break;
+-  }
++  auto it = std::upper_bound(anchor_stamps_.begin(), anchor_stamps_.end(), stamp_ns);
++  if (it == anchor_stamps_.begin()) return out; // invalid: timestamp precedes first anchor
++  const int k = static_cast<int>((it - anchor_stamps_.begin()) - 1);
+   ```
+-
+----
+-
+-### Bug 3: One-Shot Dedup Key Identity & Out-of-Order Factor Skip
+-- **Contract Rule:** "Source constraints are one-shot immutable; dedup by hash(source, epoch, key_i, key_j); out-of-order arrival supported."
+-- **Candidate Defect (`4c4006d`):**  
+-  Candidate stored `std::map<int, uint64_t> inserted_lio_` keyed only by interval index $k$. In `tryInsertLioFactors()`, it set `next_lio_scan_k_ = k + 1` unconditionally upon insertion. If interval 2 arrived before interval 1, interval 1 was permanently skipped. Furthermore, the duplicate check at lines 280-284 was unreachable dead code.
+-- **Hardening Fix:**
+-  1. Defined canonical `ConstraintKey`:
+-     ```cpp
+-     struct ConstraintKey {
+-         uint8_t source{0};  // SOURCE_LIO = 0
+-         uint32_t epoch{0};
+-         int k{0};
+-     };
+-     ```
+-  2. Maintained `std::set<ConstraintKey> inserted_constraints_` and `std::set<int> lio_constrained_intervals_`.
+-  3. `next_lio_scan_k_` advances strictly past contiguous constrained intervals, preserving eligibility for delayed bracketing.
+-  4. Added explicit `insertRelativeConstraint(key, T_Bi_Bj)` with deterministic `AcceptDecision::REJECT_DUPLICATE` diagnostics.
+-
+----
+-
+-### Bug 4: Optimizer Estimates Not Refreshed on LIO Factor Insertion
+-- **Candidate Defect (`4c4006d`):**  
+-  In candidate `4c4006d`, `tryInsertLioFactors()` invoked `isam2_.update(g, empty)` directly without setting `graph_dirty_ = true`. When calling `flushOptimizer()`, line 176 `if (!graph_dirty_) return;` aborted immediately, leaving `anchor_T_W_B_` frozen at pre-optimization values.
+-- **Hardening Fix:**  
+-  Route all BetweenFactors into `graph_` and assert `graph_dirty_ = true`. `flushOptimizer()` executes the ISAM2 update and refreshes estimates into `anchor_T_W_B_`, `anchor_v_W_`, and `anchor_bias_`, while `dT_imu_ref_` remains strictly untouched.
+-
+----
+-
+-## 3. Invariant Verification Audit
+-
+-### A. Non-Zero Lever Arm Pure Rotation Invariant
+-- **Setup:** Body rotated by $\theta = 0.20\,\text{rad}$ in yaw, zero body translation ($p_{WB} = 0$). Lever arm $T_{BL} = (0.25\,\text{m}, 0, 0)$.
+-- **Raw LiDAR Motion:** $T_{WL_1}.\text{trans}() - T_{WL_0}.\text{trans}() = 0.0499167\,\text{m}$ ($\approx 5\,\text{cm}$ displacement).
+-- **Normalized Body Relative Pose:** Evaluated via $T_{WB} = T_{WL} \cdot T_{BL}^{-1}$.
+-- **Result:**
+-  - Raw displacement norm: $0.04992\,\text{m} > 0.04\,\text{m}$.
+-  - Optimized body translation norm: $0.00000\,\text{m} < 10^{-4}\,\text{m}$.
+-  - Innovation errors: 0.
+-
+-### B. Single Gauge Prior Invariant
+-- **Setup:** 10.0 seconds of IMU streaming ($100$ intervals at $10\,\text{Hz}$, $2000$ IMU samples).
+-- **Result:**
+-  - `diag.pose_priors_added`: **1**
+-  - `diag.vel_priors_added`: **1**
+-  - `diag.bias_priors_added`: **1**
+-  - No recurring source priors added to the graph.
+-
+-### C. Unbounded Retention Invariant
+-- **Setup:** 50 intervals closed ($5.0\,\text{s}$).
+-- **Result:**
+-  - Total anchors: 51 ($> 32$ anchor boundary).
+-  - Total graph factors: 103 ($> 100$, no marginalization or variable pruning).
+-  - All anchors $k \in [0, 50]$ remain retrievable and finite.
+-
+-### D. Arrival-Order Optimizer Invariance
+-- **Setup:** Recorded `ref0_before` at interval close. Inserted LIO BetweenFactor that pulled posterior state from $0.00500\,\text{m}$ to $0.00788\,\text{m}$.
+-- **Result:**
+-  - `ref0_after.equals(ref0_before, 1e-15)`: **TRUE** (bitwise invariant).
+-  - Innovation gate evaluation is permanently decoupled from subsequent optimization steps.
++  Integrates IMU forward from $\text{anchor\_stamps\_}[k]$ to `stamp_ns`.
++- **Discriminating Test:** `HighRateState.PropagateToHistoricalDynamicTimestampUsesCorrectAnchor` simulates constant acceleration $a_x = 2.0\text{ m/s}^2$ across 10 intervals ($1.0\text{s}$). Queries $t_0 + 0.55\text{s}$ and verifies returned state matches analytic values ($v_x = 1.10\text{ m/s}, x = 0.3025\text{ m}$) rather than anchor 10 values ($x \ge 1.0\text{ m}$).
++
++### B-05: A2 Boundary Policy & Full-Coverage Tracking
++- **Defect:** `closeInterval(k)` used a single boolean `bracketed` that allowed intervals with invalid internal gaps ($dt > \text{max\_imu\_dt\_sec}$) to close with incomplete integration. Also, boundary sample ownership under ZOH was not test-locked.
++- **Resolution:**
++  - Implemented continuous interval coverage tracking: `covered_until_ns` starts at $t_i$. Any invalid subsegment sets `gap_detected = true`. Interval closure strictly requires `!gap_detected && covered_until_ns == t_j`.
++  - Documented and locked the **Right-Sample ZOH policy**: each subsegment $[t_{prev}, t_{next}]$ uses the right endpoint measurement.
++- **Discriminating Tests:**
++  - `AnchorBoundaryIntegration.NonConstantBoundarySampleOwnership`: feeds step input $\omega_z(0.098\text{s}) = 1.0\text{ rad/s}, \omega_z(0.103\text{s}) = 3.0\text{ rad/s}$ across boundary $t_1 = 0.100\text{s}$. Verifies total yaw is exactly $0.104\text{ rad}$, strictly falsifying left-sample ZOH ($0.100\text{ rad}$).
++  - `AnchorBoundaryIntegration.InvalidInternalGapDoesNotCloseInterval`: injects an invalid internal gap ($0.050\text{s} > \text{max\_dt } 0.02\text{s}$) followed by boundary sample. Verifies interval is NOT closed, `intervals_closed == 0`, `imu_dropped > 0`, and `totalGraphFactors() == 0`.
++
++### B-06: Provenance Documentation Cleanup
++- **Defect:** Package documentation had conflicting candidate SHA references.
++- **Resolution:** Clarified that `4c4006dc63cfcfbf67e3a9d94fc2d4090ea00a2a` was an early planning placeholder, superseded by actual git SHA `4c4006d587e804b91e15414b4119f10350bbb85a`. Cleaned all reports and rebuilt all patch files.
+ 
+ ---
+ 
+ ## 4. Test Suite Accounting
+ 
+ ### Workspace Summary
+-Running `colcon test-result --all --verbose` with `LD_LIBRARY_PATH=/usr/local/lib`:
++Running `colcon test-result --all --verbose` inside Docker `superodom-ros2:latest`:
+ ```text
+-build/super_odometry/Testing/20260920-0220/Test.xml: 1 test, 0 errors, 0 failures, 0 skipped
++build/super_odometry/Testing/20260920-0318/Test.xml: 1 test, 0 errors, 0 failures, 0 skipped
+ build/super_odometry/test_results/super_odometry/test_frames.gtest.xml: 5 tests, 0 errors, 0 failures, 0 skipped
+-build/super_odometry_vio/Testing/20260920-0220/Test.xml: 5 tests, 0 errors, 0 failures, 0 skipped
++build/super_odometry_vio/Testing/20260920-0318/Test.xml: 5 tests, 0 errors, 0 failures, 0 skipped
+ build/super_odometry_vio/test_results/super_odometry_vio/test_camera_model.gtest.xml: 3 tests, 0 errors, 0 failures, 0 skipped
+ build/super_odometry_vio/test_results/super_odometry_vio/test_feature_tracker.gtest.xml: 1 test, 0 errors, 0 failures, 0 skipped
+-build/super_odometry_vio/test_results/super_odometry_vio/test_fusion_shadow.gtest.xml: 18 tests, 0 errors, 0 failures, 0 skipped
++build/super_odometry_vio/test_results/super_odometry_vio/test_fusion_shadow.gtest.xml: 24 tests, 0 errors, 0 failures, 0 skipped
+ build/super_odometry_vio/test_results/super_odometry_vio/test_lidar_depth.gtest.xml: 12 tests, 0 errors, 0 failures, 0 skipped
+ build/super_odometry_vio/test_results/super_odometry_vio/test_vins_frames.gtest.xml: 5 tests, 0 errors, 0 failures, 0 skipped
+ 
+-Summary: 50 tests, 0 errors, 0 failures, 0 skipped
++Summary: 56 tests, 0 errors, 0 failures, 0 skipped
+ ```
+ 
+-### Complete Test Catalog (`test_fusion_shadow`: 18 tests)
++### Complete Test Catalog (`test_fusion_shadow`: 24 tests)
+ 1. `PoseNoiseOrder.RotationThenTranslationLocked` (GTSAM Pose3 tangent order verification)
+ 2. `AnchorSchedule.ExactMeasurementTimeGrid` (Exact measurement-time grid under jitter)
+ 3. `ImuInterval.OutOfOrderDroppedNotSilentlyFixed` (Out-of-order sample detection)
+ 4. `LioRelativeFactor.StaticRigAcceptedEndToEnd` (Static rig consistency)
+ 5. `LioRelativeFactor.ConstantAccelerationSimulationEndToEnd` (2.0s constant acceleration simulation)
+-6. `LioRelativeFactor.NonZeroLeverArmPureRotationBodyTranslationZero` (*New adversarial test*)
++6. `LioRelativeFactor.NonZeroLeverArmPureRotationBodyTranslationZero` (Lever-arm normalization under pure rotation)
+ 7. `LioGate.ArrivalOrderIndependence` (Early vs late arrival gate equivalence)
+ 8. `LioGate.TooLateFactorRejected` (Lateness bound rejection)
+ 9. `LioGate.OneShotImmutableNoDoubleInsert` (Replay idempotency)
+-10. `LioGate.OptimizerPosteriorUpdateDoesNotCorruptImuRef` (*New adversarial test*)
++10. `LioGate.OptimizerPosteriorUpdateDoesNotCorruptImuRef` (Arrival-order optimizer invariance)
+ 11. `SourceEpoch.ResetDoesNotResetFusionAndBlocksCrossEpoch` (Epoch isolation)
+-12. `HighRateState.PropagationBetweenAnchors` (Sub-interval propagation)
+-13. `ImuReference.NonZeroVelocityRelativePredictionOracle` (*New adversarial test*)
+-14. `AnchorBoundaryIntegration.JitteredSamplesEndpointCaseA_Rotation` (*New adversarial test*)
+-15. `AnchorBoundaryIntegration.JitteredSamplesEndpointCaseB_TranslationVelocity` (*New adversarial test*)
+-16. `LioConstraintKey.DuplicateRejectionAndEpochSeparation` (*New adversarial test*)
+-17. `GaugePrior.ExactlyOnePriorAddedAcrossManyAnchors` (*New adversarial test*)
+-18. `GraphRetention.UnboundedRetentionBeyond32AnchorsNoEviction` (*New adversarial test*)
++12. `SourceEpoch.DelayedOldEpochCannotRollbackCurrentEpoch` (*New R3 adversarial test — B-02*)
++13. `HighRateState.PropagationBetweenAnchors` (Sub-interval propagation)
++14. `HighRateState.PropagateToHistoricalDynamicTimestampUsesCorrectAnchor` (*New R3 adversarial test — B-04*)
++15. `ImuReference.NonZeroVelocityRelativePredictionOracle` (Non-zero velocity IMU reference oracle — A1)
++16. `AnchorBoundaryIntegration.JitteredSamplesEndpointCaseA_Rotation` (Boundary integration rotation — A2)
++17. `AnchorBoundaryIntegration.JitteredSamplesEndpointCaseB_TranslationVelocity` (Boundary integration translation — A2)
++18. `AnchorBoundaryIntegration.NonConstantBoundarySampleOwnership` (*New R3 adversarial test — B-05 right-sample ZOH*)
++19. `AnchorBoundaryIntegration.InvalidInternalGapDoesNotCloseInterval` (*New R3 adversarial test — B-05 coverage tracking*)
++20. `LioConstraintKey.DuplicateRejectionAndEpochSeparation` (One-shot key deduplication)
++21. `GaugePrior.ExactlyOnePriorAddedAcrossManyAnchors` (Gauge prior counter verification)
++22. `GraphRetention.UnboundedRetentionBeyond32AnchorsNoEviction` (Unbounded retention, exact 103 factor check)
++23. `LioPoseBuffer.OutOfOrderFutureSampleDoesNotShadowEndpoint` (*New R3 adversarial test — B-01 arrival order*)
++24. `LioPoseBuffer.JitteredSamplesInterpolatedToAnchorTimes` (*New R3 adversarial test — B-03 source interpolation*)
+ 
+ ---
+ 
+ ## 5. Master Review Declaration
+ 
+-All contract falsification criteria have been executed and verified. Proven defects in the candidate implementation `4c4006d` have been resolved with minimal, correct implementations. Workspace test suites are 100% green.
++All contract falsification criteria and all Round 3 review findings (B-01 through B-06) have been resolved and verified with discriminating unit tests. No architectural changes or Design Change Proposals were required. The full workspace test suite is 100% green (56/56 tests passing).
+ 
+ **Declaration:** **READY FOR MASTER REVIEW**
+diff --git a/super_odometry_vio/include/super_odometry_vio/fusion_2021/shadow_timeline.hpp b/super_odometry_vio/include/super_odometry_vio/fusion_2021/shadow_timeline.hpp
+index b1367fb..ae749fd 100644
+--- a/super_odometry_vio/include/super_odometry_vio/fusion_2021/shadow_timeline.hpp
++++ b/super_odometry_vio/include/super_odometry_vio/fusion_2021/shadow_timeline.hpp
+@@ -139,6 +139,11 @@ class ShadowTimeline
+     void feedLioPose(int64_t stamp_ns, const Sophus::SE3d& T_W_L,
+                      uint32_t lio_epoch = 0);
+ 
++    // Look up or interpolate LIO source pose at a given timestamp within an epoch.
++    // Double-sided bracketing within max_interpolation_gap_sec, translation LERP, rotation SLERP.
++    bool lookupLioPoseAt(uint32_t epoch, int64_t stamp_ns,
++                         Sophus::SE3d& T_W_L) const;
++
+     // Insert a relative constraint with explicit key and one-shot deduplication.
+     AcceptDecision insertRelativeConstraint(const ConstraintKey& key,
+                                              const gtsam::Pose3& T_Bi_Bj);
+diff --git a/super_odometry_vio/src/fusion_2021/shadow_timeline.cpp b/super_odometry_vio/src/fusion_2021/shadow_timeline.cpp
+index 1389ca8..ef02bbd 100644
+--- a/super_odometry_vio/src/fusion_2021/shadow_timeline.cpp
++++ b/super_odometry_vio/src/fusion_2021/shadow_timeline.cpp
+@@ -118,50 +118,56 @@ void ShadowTimeline::closeInterval(int k)
+     const int64_t t_j = anchor_stamps_[k + 1];
+ 
+     gtsam::PreintegratedImuMeasurements pim(imu_params_, anchor_bias_[k]);
+-    bool bracketed = false;
+-    int64_t t_prev = t_i;
++    int64_t covered_until_ns = t_i;
++    bool gap_detected = false;
+     for (const auto& s : imu_buf_)
+     {
+         if (s.stamp_ns <= t_i) continue;
+ 
+         if (s.stamp_ns < t_j)
+         {
+-            const double dt = static_cast<double>(s.stamp_ns - t_prev) * 1e-9;
++            const double dt = static_cast<double>(s.stamp_ns - covered_until_ns) * 1e-9;
+             if (dt <= 0.0 || dt > config_.max_imu_dt_sec)
+             {
+                 ++diag_.imu_dropped;
+-                t_prev = s.stamp_ns;
++                gap_detected = true;
++                covered_until_ns = s.stamp_ns;
+                 continue;
+             }
+             pim.integrateMeasurement(s.acc, s.gyro, dt);
+-            t_prev = s.stamp_ns;
+-            bracketed = true;
++            covered_until_ns = s.stamp_ns;
+         }
+         else // s.stamp_ns >= t_j
+         {
+-            // Exact boundary clamping under Zero-Order Hold (ZOH):
+-            // Integrate remaining sub-interval [t_prev, t_j] using this bracketing sample.
+-            const double dt = static_cast<double>(t_j - t_prev) * 1e-9;
++            // Exact boundary clamping under Zero-Order Hold (right-sample ZOH policy):
++            // The terminal sub-interval [covered_until_ns, t_j] is integrated using this bracketing sample s.
++            const double dt = static_cast<double>(t_j - covered_until_ns) * 1e-9;
+             if (dt > 0.0)
+             {
+                 if (dt > config_.max_imu_dt_sec)
+                 {
+                     ++diag_.imu_dropped;
++                    gap_detected = true;
+                 }
+                 else
+                 {
+                     pim.integrateMeasurement(s.acc, s.gyro, dt);
+-                    bracketed = true;
++                    covered_until_ns = t_j;
+                 }
+             }
+-            t_prev = t_j;
++            else if (dt == 0.0)
++            {
++                // Exact sample landed on t_j
++                covered_until_ns = t_j;
++            }
+             break;
+         }
+     }
+-    if (!bracketed)
++    if (gap_detected || covered_until_ns != t_j)
+     {
+-        // No IMU coverage for the interval: leave it IMU-unconstrained this
+-        // round (diagnosed); the anchor pair is only closed when covered.
++        // Interval not fully and continuously covered by IMU without gaps:
++        // leave it unclosed this round. The anchor pair is only closed when
++        // covered end-to-end without invalid gaps.
+         return;
+     }
+     ++diag_.intervals_closed;
+@@ -215,7 +221,15 @@ void ShadowTimeline::flushOptimizer()
+ void ShadowTimeline::feedLioPose(int64_t stamp_ns, const Sophus::SE3d& T_W_L,
+                                  uint32_t lio_epoch)
+ {
+-    current_lio_epoch_ = lio_epoch;
++    if (lio_epoch < current_lio_epoch_)
++    {
++        ++diag_.lio_stale_skipped;
++        return;
++    }
++    if (lio_epoch > current_lio_epoch_)
++    {
++        current_lio_epoch_ = lio_epoch;
++    }
+     lio_buf_.push_back({stamp_ns, lio_epoch, T_W_L});
+     while (lio_buf_.size() > 200) lio_buf_.pop_front();
+     tryInsertLioFactors();
+@@ -281,6 +295,72 @@ AcceptDecision ShadowTimeline::insertRelativeConstraint(
+     return AcceptDecision::ACCEPTED;
+ }
+ 
++bool ShadowTimeline::lookupLioPoseAt(uint32_t epoch, int64_t stamp_ns,
++                                     Sophus::SE3d& T_W_L) const
++{
++    const LioSample* s_exact = nullptr;
++    const LioSample* s_before = nullptr;
++    const LioSample* s_after = nullptr;
++
++    for (const auto& s : lio_buf_)
++    {
++        if (s.epoch != epoch) continue;
++
++        if (s.stamp_ns == stamp_ns)
++        {
++            s_exact = &s;
++            break;
++        }
++        if (s.stamp_ns < stamp_ns)
++        {
++            if (!s_before || s.stamp_ns > s_before->stamp_ns)
++            {
++                s_before = &s;
++            }
++        }
++        else // s.stamp_ns > stamp_ns
++        {
++            if (!s_after || s.stamp_ns < s_after->stamp_ns)
++            {
++                s_after = &s;
++            }
++        }
++    }
++
++    if (s_exact)
++    {
++        T_W_L = s_exact->T_W_L;
++        return true;
++    }
++
++    if (!s_before || !s_after)
++    {
++        return false;
++    }
++
++    const double gap_sec =
++        static_cast<double>(s_after->stamp_ns - s_before->stamp_ns) * 1e-9;
++    if (gap_sec <= 0.0 || gap_sec > config_.max_interpolation_gap_sec)
++    {
++        return false;
++    }
++
++    const double alpha =
++        static_cast<double>(stamp_ns - s_before->stamp_ns) /
++        static_cast<double>(s_after->stamp_ns - s_before->stamp_ns);
++
++    const Eigen::Vector3d trans =
++        (1.0 - alpha) * s_before->T_W_L.translation() +
++        alpha * s_after->T_W_L.translation();
++
++    const Eigen::Quaterniond q_before(s_before->T_W_L.unit_quaternion());
++    const Eigen::Quaterniond q_after(s_after->T_W_L.unit_quaternion());
++    const Eigen::Quaterniond q_interp = q_before.slerp(alpha, q_after);
++
++    T_W_L = Sophus::SE3d(q_interp, trans);
++    return true;
++}
++
+ void ShadowTimeline::tryInsertLioFactors()
+ {
+     if (last_closed_k_ < 0 || !T_B_L_set_) return;
+@@ -299,33 +379,18 @@ void ShadowTimeline::tryInsertLioFactors()
+         const int64_t t_i = anchor_stamps_[k];
+         const int64_t t_j = anchor_stamps_[k + 1];
+ 
+-        // Bracketing LIO samples in the SAME epoch.
+-        const LioSample* s_i = nullptr;
+-        const LioSample* s_j = nullptr;
+-        for (const auto& s : lio_buf_)
+-        {
+-            if (s.epoch != current_lio_epoch_) continue;
+-            if (s.stamp_ns <= t_i &&
+-                (!s_i || s.stamp_ns > s_i->stamp_ns))
+-                s_i = &s;
+-            if (s.stamp_ns >= t_j && !s_j) s_j = &s;
+-        }
+-        if (!s_i || !s_j)
++        Sophus::SE3d T_W_L_i, T_W_L_j;
++        if (!lookupLioPoseAt(current_lio_epoch_, t_i, T_W_L_i) ||
++            !lookupLioPoseAt(current_lio_epoch_, t_j, T_W_L_j))
+         {
+             ++diag_.lio_no_bracket;
+             continue;  // try later: more samples may arrive for this interval
+         }
+-        if ((s_j->stamp_ns - s_i->stamp_ns) * 1e-9 >
+-            config_.max_interpolation_gap_sec)
+-        {
+-            ++diag_.lio_no_bracket;
+-            continue;
+-        }
+ 
+         // Body-frame differencing (gate-review correction 2):
+         // T_W_B = T_W_L * inverse(T_B_L), then T_Bi_Bj = between(T_W_Bi, T_W_Bj).
+-        const Sophus::SE3d T_W_Bi = s_i->T_W_L * T_B_L_.inverse();
+-        const Sophus::SE3d T_W_Bj = s_j->T_W_L * T_B_L_.inverse();
++        const Sophus::SE3d T_W_Bi = T_W_L_i * T_B_L_.inverse();
++        const Sophus::SE3d T_W_Bj = T_W_L_j * T_B_L_.inverse();
+         const gtsam::Pose3 T_W_Bi_g(
+             gtsam::Rot3(T_W_Bi.rotationMatrix()),
+             gtsam::Point3(T_W_Bi.translation()));
+@@ -361,7 +426,16 @@ PredictedState ShadowTimeline::propagateTo(int64_t stamp_ns)
+     PredictedState out;
+     if (anchor_stamps_.empty()) return out;
+     out.stamp_ns = stamp_ns;
+-    const int k = static_cast<int>(anchor_stamps_.size()) - 1;
++
++    // Select latest anchor k such that anchor_stamps_[k] <= stamp_ns
++    auto it = std::upper_bound(anchor_stamps_.begin(), anchor_stamps_.end(), stamp_ns);
++    if (it == anchor_stamps_.begin())
++    {
++        // Requested timestamp is before the earliest anchor
++        return out;
++    }
++    const int k = static_cast<int>((it - anchor_stamps_.begin()) - 1);
++
+     gtsam::PreintegratedImuMeasurements pim(imu_params_, anchor_bias_[k]);
+     int64_t t_prev = anchor_stamps_[k];
+     for (const auto& s : imu_buf_)
+diff --git a/super_odometry_vio/test/test_fusion_shadow.cpp b/super_odometry_vio/test/test_fusion_shadow.cpp
+index 12ca29f..a33514e 100644
+--- a/super_odometry_vio/test/test_fusion_shadow.cpp
++++ b/super_odometry_vio/test/test_fusion_shadow.cpp
+@@ -510,7 +510,8 @@ TEST(GraphRetention, UnboundedRetentionBeyond32AnchorsNoEviction)
+ 
+     EXPECT_GT(tl.anchorCount(), 32);
+     EXPECT_EQ(tl.anchorCount(), 51);
+-    EXPECT_GE(tl.totalGraphFactors(), 100);
++    // Exact factor count: 3 initial priors + 50 ImuFactors + 50 bias BetweenFactors = 103
++    EXPECT_EQ(tl.totalGraphFactors(), 103);
+ 
+     // Verify all anchors from 0 to 50 are retrievable and finite
+     for (int k = 0; k <= 50; ++k)
+@@ -559,4 +560,206 @@ TEST(LioGate, OptimizerPosteriorUpdateDoesNotCorruptImuRef)
+     EXPECT_NE(ref0_after.translation().x(), posterior_rel.translation().x());
+ }
+ 
++TEST(AnchorBoundaryIntegration, NonConstantBoundarySampleOwnership)
++{
++    // Reviewer finding B-05 / A2: Lock right-sample ZOH boundary policy.
++    // Interval [0.0, 0.100s] with non-constant step input across boundary:
++    // t = 0.098s: omega_z = 1.0 rad/s
++    // t = 0.103s: omega_z = 3.0 rad/s
++    // boundary t_j = 0.100s
++    //
++    // Under Right-Sample ZOH:
++    // Subsegment 1: [0.0, 0.098s] (dt = 0.098s) integrated with omega_z = 1.0 rad/s -> delta_yaw = 0.098 rad
++    // Subsegment 2: [0.098, 0.100s] (dt = 0.002s) integrated with sample at 0.103s (omega_z = 3.0 rad/s) -> delta_yaw = 0.006 rad
++    // Expected total yaw = 0.098 + 0.006 = 0.104 rad.
++    // (Under Left-Sample ZOH, subsegment 2 would use omega_z = 1.0 rad/s -> delta_yaw = 0.002 rad -> total 0.100 rad).
++    ShadowTimeline tl(imuParams(), baseConfig());
++    const int64_t t0 = 20000000000ll;
++    // Feed 10ms samples from t0 to t0 + 90ms with omega_z = 1.0 rad/s (all dt <= max_imu_dt_sec 0.05s)
++    for (int i = 0; i <= 9; ++i)
++    {
++        tl.feedImu(t0 + static_cast<int64_t>(i) * 10000000ll,
++                   gtsam::Vector3(0.0, 0.0, 9.81), gtsam::Vector3(0.0, 0.0, 1.0));
++    }
++    // Sample at 98ms with omega_z = 1.0 rad/s (dt = 8ms <= 50ms)
++    tl.feedImu(t0 + 98000000ll, gtsam::Vector3(0.0, 0.0, 9.81), gtsam::Vector3(0.0, 0.0, 1.0));
++    // Boundary crossing sample at 103ms with omega_z = 3.0 rad/s (dt = 5ms <= 50ms)
++    tl.feedImu(t0 + 103000000ll, gtsam::Vector3(0.0, 0.0, 9.81), gtsam::Vector3(0.0, 0.0, 3.0));
++
++    ASSERT_EQ(tl.diag().intervals_closed, 1);
++    const double yaw_ref = tl.imuRef(0).rotation().yaw();
++    EXPECT_NEAR(yaw_ref, 0.104, 1e-4);
++    // Explicitly assert it does NOT match left-sample ZOH (0.100)
++    EXPECT_GT(std::abs(yaw_ref - 0.100), 0.003);
++}
++
++TEST(AnchorBoundaryIntegration, InvalidInternalGapDoesNotCloseInterval)
++{
++    // Reviewer finding B-05 / A2: Partial invalid internal gap (> max_imu_dt_sec)
++    // must NOT close an interval with incomplete integration.
++    ShadowConfig c = baseConfig();
++    c.max_imu_dt_sec = 0.02;  // 20 ms threshold
++    ShadowTimeline tl(imuParams(), c);
++    const int64_t t0 = 21000000000ll;
++    // Sample at t0
++    tl.feedImu(t0, gtsam::Vector3(0.0, 0.0, 9.81), gtsam::Vector3::Zero());
++    // Valid segment: dt = 0.010s <= max_imu_dt_sec (0.02s)
++    tl.feedImu(t0 + 10000000ll, gtsam::Vector3(0.0, 0.0, 9.81), gtsam::Vector3::Zero());
++    // Invalid internal gap: dt = 0.050s > max_imu_dt_sec (0.02s)
++    tl.feedImu(t0 + 60000000ll, gtsam::Vector3(0.0, 0.0, 9.81), gtsam::Vector3::Zero());
++    // Boundary-crossing sample at t0 + 0.105s (crosses t1 = t0 + 0.100s)
++    tl.feedImu(t0 + 105000000ll, gtsam::Vector3(0.0, 0.0, 9.81), gtsam::Vector3::Zero());
++
++    // Invariant: interval 0 must NOT be closed because of the internal gap
++    EXPECT_EQ(tl.diag().intervals_closed, 0);
++    EXPECT_GT(tl.diag().imu_dropped, 0);
++    EXPECT_EQ(tl.totalGraphFactors(), 0);  // Unclosed interval is not flushed to ISAM2
++}
++
++TEST(LioPoseBuffer, OutOfOrderFutureSampleDoesNotShadowEndpoint)
++{
++    // Reviewer finding B-01 / A4.1: Arrival-order independent right endpoint selection.
++    // A future sample arriving before the true endpoint must NOT shadow the true endpoint.
++    ShadowTimeline tl(imuParams(), baseConfig());
++    const int64_t t0 = 22000000000ll;
++    // Feed 0.2s of IMU to establish intervals 0 and 1
++    feedStaticImu(tl, t0, 0.2, 200);
++    ASSERT_GE(tl.diag().intervals_closed, 2);
++
++    // Static rig: ground truth pose is identity
++    const Sophus::SE3d pose_0 = Sophus::SE3d();
++    // Future sample arrives with 2.0m displacement (would violate 1.0m innovation gate if mistakenly chosen)
++    const Sophus::SE3d pose_future(Eigen::Quaterniond::Identity(), Eigen::Vector3d(2.0, 0.0, 0.0));
++    const Sophus::SE3d pose_1 = Sophus::SE3d();
++
++    // Feed in out-of-timestamp order:
++    tl.feedLioPose(t0, pose_0);                          // t = t0 (0.0s)
++    tl.feedLioPose(t0 + 300000000ll, pose_future);       // t = t0 + 0.30s (arrives FIRST)
++    tl.feedLioPose(t0 + 100000000ll, pose_1);            // t = t0 + 0.10s (arrives LATER)
++
++    // Interval 0 [t0, t0 + 0.1s] must use pose_1 (identity), NOT pose_future (2.0m)
++    EXPECT_TRUE(tl.isIntervalLioConstrained(0));
++    EXPECT_EQ(tl.diag().lio_accepted, 1);
++    EXPECT_EQ(tl.diag().lio_rejected_innovation_trans, 0);
++
++    Sophus::SE3d T_lookup;
++    ASSERT_TRUE(tl.lookupLioPoseAt(0, t0 + 100000000ll, T_lookup));
++    EXPECT_NEAR(T_lookup.translation().norm(), 0.0, 1e-5);
++}
++
++TEST(LioPoseBuffer, JitteredSamplesInterpolatedToAnchorTimes)
++{
++    // Reviewer finding B-03 / Section 3: Source pose interpolation contract.
++    // LIO samples with timestamp jitter around anchors must be linearly interpolated
++    // in translation and SLERP-interpolated in rotation to the exact anchor times.
++    ShadowTimeline tl(imuParams(), baseConfig());
++    const int64_t t0 = 23000000000ll;  // 23.0s
++    // Feed static IMU for 0.2s to establish intervals 0 and 1
++    feedStaticImu(tl, t0, 0.2, 200);
++
++    // Simulated trajectory: constant velocity v_x = 2.0 m/s, omega_z = 0.5 rad/s
++    // Anchors are at t0 (0.0s) and t0 + 0.100s.
++    // Feed jittered samples:
++    // Sample a: t = t0 - 0.02s (-20ms) -> x = -0.04m, yaw = -0.010 rad
++    // Sample b: t = t0 + 0.03s (+30ms) -> x = +0.06m, yaw = +0.015 rad
++    // Sample c: t = t0 + 0.08s (+80ms) -> x = +0.16m, yaw = +0.040 rad
++    // Sample d: t = t0 + 0.13s (+130ms)-> x = +0.26m, yaw = +0.065 rad
++    auto makePose = [](double x, double yaw) {
++        Eigen::Quaterniond q(Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()));
++        return Sophus::SE3d(q, Eigen::Vector3d(x, 0.0, 0.0));
++    };
++
++    tl.feedLioPose(t0 - 20000000ll, makePose(-0.04, -0.010));
++    tl.feedLioPose(t0 + 30000000ll, makePose(0.06, 0.015));
++    tl.feedLioPose(t0 + 80000000ll, makePose(0.16, 0.040));
++    tl.feedLioPose(t0 + 130000000ll, makePose(0.26, 0.065));
++
++    // Verify lookupLioPoseAt directly
++    Sophus::SE3d T_L0, T_L1;
++    ASSERT_TRUE(tl.lookupLioPoseAt(0, t0, T_L0));
++    ASSERT_TRUE(tl.lookupLioPoseAt(0, t0 + 100000000ll, T_L1));
++
++    // At t0: alpha = (0 - (-0.02)) / (0.03 - (-0.02)) = 0.02 / 0.05 = 0.4
++    // x = -0.04 + 0.4 * 0.10 = 0.000m, yaw = -0.010 + 0.4 * 0.025 = 0.000 rad
++    EXPECT_NEAR(T_L0.translation().x(), 0.0, 1e-4);
++    EXPECT_NEAR(gtsam::Rot3(T_L0.rotationMatrix()).yaw(), 0.0, 1e-4);
++
++    // At t0 + 0.100s: alpha = (0.10 - 0.08) / (0.13 - 0.08) = 0.02 / 0.05 = 0.4
++    // x = 0.16 + 0.4 * 0.10 = 0.200m, yaw = 0.040 + 0.4 * 0.025 = 0.050 rad
++    EXPECT_NEAR(T_L1.translation().x(), 0.20, 1e-4);
++    EXPECT_NEAR(gtsam::Rot3(T_L1.rotationMatrix()).yaw(), 0.05, 1e-4);
++
++    // Relative displacement across the 0.1s interval must be exactly (0.20m, 0.05rad)
++    Sophus::SE3d T_rel = T_L0.inverse() * T_L1;
++    EXPECT_NEAR(T_rel.translation().x(), 0.20, 1e-4);
++    EXPECT_NEAR(gtsam::Rot3(T_rel.rotationMatrix()).yaw(), 0.05, 1e-4);
++
++    // Interval 0 must be constrained and accepted
++    EXPECT_TRUE(tl.isIntervalLioConstrained(0));
++    EXPECT_EQ(tl.diag().lio_accepted, 1);
++}
++
++TEST(SourceEpoch, DelayedOldEpochCannotRollbackCurrentEpoch)
++{
++    // Reviewer finding B-02 / A4.2: Monotonic source epoch enforcement.
++    // A delayed old-epoch sample arriving after a new epoch has been observed
++    // must be rejected and must not roll back current_lio_epoch_.
++    ShadowTimeline tl(imuParams(), baseConfig());
++    const int64_t t0 = 24000000000ll;
++    feedStaticImu(tl, t0, 0.2, 200);
++
++    // Epoch 0 sample arrives
++    tl.feedLioPose(t0, Sophus::SE3d(), 0);
++
++    // Reboot / epoch advance: epoch 1 sample arrives
++    tl.feedLioPose(t0 + 50000000ll, Sophus::SE3d(), 1);
++
++    // Stale delayed epoch 0 sample arrives
++    tl.feedLioPose(t0 + 100000000ll, Sophus::SE3d(), 0);
++
++    // Stale sample must be skipped and diagnosed
++    EXPECT_EQ(tl.diag().lio_stale_skipped, 1);
++    EXPECT_FALSE(tl.isIntervalLioConstrained(0));
++    EXPECT_EQ(tl.diag().lio_accepted, 0);
++
++    // New epoch 1 sample completes the interval [t0 + 0.05, t0 + 0.15]
++    tl.feedLioPose(t0 + 150000000ll, Sophus::SE3d(), 1);
++    Sophus::SE3d T_interp;
++    EXPECT_TRUE(tl.lookupLioPoseAt(1, t0 + 100000000ll, T_interp));
++}
++
++TEST(HighRateState, PropagateToHistoricalDynamicTimestampUsesCorrectAnchor)
++{
++    // Reviewer finding B-04 / Section 2: High-rate propagation for historical/mid-trajectory timestamps.
++    // propagateTo(t) must select anchor k such that anchor_stamps_[k] <= t,
++    // rather than always starting from the newest anchor.
++    ShadowTimeline tl(imuParams(), baseConfig());
++    const int64_t t0 = 25000000000ll;
++
++    // Feed 1.0s of IMU with constant acceleration a_x = 2.0 m/s^2 at 200 Hz
++    const double a_x = 2.0;
++    const int64_t dt_ns = 5000000ll;  // 5 ms
++    for (int i = 0; i <= 200; ++i)
++    {
++        tl.feedImu(t0 + static_cast<int64_t>(i) * dt_ns,
++                   gtsam::Vector3(a_x, 0.0, 9.81), gtsam::Vector3::Zero());
++    }
++
++    ASSERT_EQ(tl.anchorCount(), 11);  // anchors 0 to 10 (t0 to t0 + 1.0s)
++    ASSERT_EQ(tl.diag().intervals_closed, 10);
++
++    // Query historical timestamp at t = t0 + 0.55s (550 ms)
++    // Anchor 5 is at 0.50s; Anchor 10 is at 1.00s.
++    // Analytic state at 0.55s:
++    // v_x(0.55) = a_x * 0.55 = 1.10 m/s
++    // p_x(0.55) = 0.5 * a_x * 0.55^2 = 0.3025 m
++    // If it started from newest anchor (1.00s), v_x would be >= 2.0 m/s and p_x >= 1.0 m.
++    const auto st = tl.propagateTo(t0 + 550000000ll);
++    ASSERT_TRUE(st.valid);
++    EXPECT_NEAR(st.v_W.x(), 1.10, 0.05);
++    EXPECT_NEAR(st.T_W_B.translation().x(), 0.3025, 0.05);
++    // Strictly verify it did NOT return newest-anchor state (p_x ~ 1.0m)
++    EXPECT_LT(st.T_W_B.translation().x(), 0.50);
++}
++
+ }  // namespace
