@@ -289,4 +289,274 @@ TEST(HighRateState, PropagationBetweenAnchors)
     EXPECT_LT(after.T_W_B.translation().norm(), 1e-3);
 }
 
+TEST(ImuReference, NonZeroVelocityRelativePredictionOracle)
+{
+    // Contract falsification test:
+    // interval 0 accelerates to non-zero velocity (v_1 != 0).
+    // interval 1 continues accelerating.
+    // Frozen contract requires: dT_imu_ref(1) == IMU-only relative pose prediction.
+    // Oracle: T_{W B_1}.between(pim.predict(state_1, bias_1).pose()).
+    ShadowTimeline tl(imuParams(), baseConfig());
+    const int64_t t0 = 11000000000ll;
+    const double a = 2.0;
+    const int64_t dt_imu = 5000000ll;  // 5 ms
+
+    // Interval 0: [t0, t0 + 0.1s]
+    tl.feedImu(t0, gtsam::Vector3(a, 0.0, 9.81), gtsam::Vector3::Zero());
+    for (int i = 1; i <= 20; ++i)
+        tl.feedImu(t0 + static_cast<int64_t>(i) * dt_imu,
+                   gtsam::Vector3(a, 0.0, 9.81), gtsam::Vector3::Zero());
+
+    gtsam::Pose3 T_1; gtsam::Vector3 v_1; gtsam::imuBias::ConstantBias b_1;
+    ASSERT_TRUE(tl.anchorState(1, T_1, v_1, b_1));
+    EXPECT_NEAR(v_1.x(), 0.2, 0.01);  // v_1 = a * 0.1 = 0.2 m/s
+
+    // Interval 1: [t0 + 0.1s, t0 + 0.2s]
+    for (int i = 21; i <= 40; ++i)
+        tl.feedImu(t0 + static_cast<int64_t>(i) * dt_imu,
+                   gtsam::Vector3(a, 0.0, 9.81), gtsam::Vector3::Zero());
+
+    // Compute oracle expected relative pose from anchor 1
+    gtsam::PreintegratedImuMeasurements pim(imuParams(), b_1);
+    for (int i = 1; i <= 20; ++i)
+        pim.integrateMeasurement(gtsam::Vector3(a, 0.0, 9.81), gtsam::Vector3::Zero(), 0.005);
+    const gtsam::NavState state_1(T_1, v_1);
+    const gtsam::NavState predicted_2 = pim.predict(state_1, b_1);
+    const gtsam::Pose3 expected_rel = T_1.between(predicted_2.pose());
+
+    const gtsam::Pose3 stored_ref = tl.imuRef(1);
+    std::cout << "[Falsification Audit] v_1.x() = " << v_1.x() << std::endl;
+    std::cout << "[Falsification Audit] pim.deltaPij().x() = " << pim.deltaPij().x() << std::endl;
+    std::cout << "[Falsification Audit] expected_rel.translation().x() = " << expected_rel.translation().x() << std::endl;
+    std::cout << "[Falsification Audit] stored_ref.translation().x() = " << stored_ref.translation().x() << std::endl;
+    std::cout << "[Falsification Audit] delta error = " << (stored_ref.translation().x() - expected_rel.translation().x()) << std::endl;
+
+    EXPECT_NEAR(stored_ref.translation().x(), expected_rel.translation().x(), 1e-4);
+}
+
+TEST(AnchorBoundaryIntegration, JitteredSamplesEndpointCaseA_Rotation)
+{
+    // Case A: Pure rotation at omega_z = 1.0 rad/s.
+    // Jittered IMU samples at ~200Hz where no sample lands exactly on t0 + 0.1s.
+    // Exact boundary ZOH integration must clamp at t_j, integrating exactly 0.100s.
+    ShadowTimeline tl(imuParams(), baseConfig());
+    const int64_t t0 = 12000000000ll;
+    const double omega_z = 1.0;
+
+    int64_t t_cur = t0;
+    tl.feedImu(t_cur, gtsam::Vector3(0.0, 0.0, 9.81), gtsam::Vector3(0.0, 0.0, omega_z));
+    int step = 0;
+    while (t_cur < t0 + 105000000ll)  // up to 105 ms
+    {
+        const int64_t dt_jitter = ((step % 3 == 0) ? 4800000ll : ((step % 3 == 1) ? 5300000ll : 4900000ll));
+        t_cur += dt_jitter;
+        tl.feedImu(t_cur, gtsam::Vector3(0.0, 0.0, 9.81), gtsam::Vector3(0.0, 0.0, omega_z));
+        ++step;
+    }
+
+    ASSERT_GE(tl.anchorCount(), 2);
+    gtsam::Pose3 T_1; gtsam::Vector3 v_1; gtsam::imuBias::ConstantBias b_1;
+    ASSERT_TRUE(tl.anchorState(1, T_1, v_1, b_1));
+
+    // Analytic expectation: Delta yaw = omega_z * 0.100s = 0.10000 rad.
+    const double yaw_pred = T_1.rotation().yaw();
+    const double yaw_ref = tl.imuRef(0).rotation().yaw();
+    std::cout << "[Case A Rotation] T_1 yaw = " << yaw_pred << ", ref yaw = " << yaw_ref << std::endl;
+    EXPECT_NEAR(yaw_pred, 0.100, 1e-5);
+    EXPECT_NEAR(yaw_ref, 0.100, 1e-5);
+}
+
+TEST(AnchorBoundaryIntegration, JitteredSamplesEndpointCaseB_TranslationVelocity)
+{
+    // Case B: Pure linear acceleration at a_x = 2.0 m/s^2.
+    // Jittered IMU samples straddling t0 + 0.1s.
+    // Exact boundary ZOH integration must yield exact v1 = a*dt = 0.2 m/s, p1 = 0.5*a*dt^2 = 0.01 m.
+    ShadowTimeline tl(imuParams(), baseConfig());
+    const int64_t t0 = 13000000000ll;
+    const double a_x = 2.0;
+
+    int64_t t_cur = t0;
+    tl.feedImu(t_cur, gtsam::Vector3(a_x, 0.0, 9.81), gtsam::Vector3::Zero());
+    int step = 0;
+    while (t_cur < t0 + 105000000ll)
+    {
+        const int64_t dt_jitter = ((step % 3 == 0) ? 4700000ll : ((step % 3 == 1) ? 5400000ll : 5100000ll));
+        t_cur += dt_jitter;
+        tl.feedImu(t_cur, gtsam::Vector3(a_x, 0.0, 9.81), gtsam::Vector3::Zero());
+        ++step;
+    }
+
+    ASSERT_GE(tl.anchorCount(), 2);
+    gtsam::Pose3 T_1; gtsam::Vector3 v_1; gtsam::imuBias::ConstantBias b_1;
+    ASSERT_TRUE(tl.anchorState(1, T_1, v_1, b_1));
+
+    const double expected_v = a_x * 0.100;
+    const double expected_p = 0.5 * a_x * 0.100 * 0.100;
+    std::cout << "[Case B Translation] v_1.x() = " << v_1.x() << " (expected " << expected_v << ")" << std::endl;
+    std::cout << "[Case B Translation] p_1.x() = " << T_1.translation().x() << " (expected " << expected_p << ")" << std::endl;
+    EXPECT_NEAR(v_1.x(), expected_v, 1e-5);
+    EXPECT_NEAR(T_1.translation().x(), expected_p, 1e-5);
+    EXPECT_NEAR(tl.imuRef(0).translation().x(), expected_p, 1e-5);
+}
+
+TEST(LioConstraintKey, DuplicateRejectionAndEpochSeparation)
+{
+    ShadowTimeline tl(imuParams(), baseConfig());
+    const int64_t t0 = 14000000000ll;
+    feedStaticImu(tl, t0, 0.5, 200);  // 5 intervals closed
+    ASSERT_GE(tl.anchorCount(), 5);
+
+    const int k = 1;
+    const ConstraintKey key_epoch0{0 /* SOURCE_LIO */, 0 /* epoch */, k};
+
+    // 1. Initial valid insertion
+    const AcceptDecision d1 = tl.insertRelativeConstraint(key_epoch0, gtsam::Pose3());
+    EXPECT_EQ(d1, AcceptDecision::ACCEPTED);
+    EXPECT_TRUE(tl.hasConstraint(key_epoch0));
+    EXPECT_TRUE(tl.isIntervalLioConstrained(k));
+    EXPECT_EQ(tl.diag().lio_accepted, 1);
+    EXPECT_EQ(tl.diag().lio_rejected_duplicate, 0);
+
+    // 2. Exact duplicate key replay -> REJECT_DUPLICATE
+    const AcceptDecision d2 = tl.insertRelativeConstraint(key_epoch0, gtsam::Pose3());
+    EXPECT_EQ(d2, AcceptDecision::REJECT_DUPLICATE);
+    EXPECT_EQ(tl.diag().lio_rejected_duplicate, 1);
+    EXPECT_EQ(tl.diag().lio_accepted, 1);
+
+    // 3. Different epoch on already-constrained interval -> REJECT_DUPLICATE (interval one-shot immutable)
+    const ConstraintKey key_epoch1{0 /* SOURCE_LIO */, 1 /* epoch */, k};
+    const AcceptDecision d3 = tl.insertRelativeConstraint(key_epoch1, gtsam::Pose3());
+    EXPECT_EQ(d3, AcceptDecision::REJECT_DUPLICATE);
+    EXPECT_EQ(tl.diag().lio_rejected_duplicate, 2);
+    EXPECT_EQ(tl.diag().lio_accepted, 1);
+
+    // 4. New epoch on unconstrained interval k=2 -> ACCEPTED
+    const ConstraintKey key_epoch1_k2{0 /* SOURCE_LIO */, 1 /* epoch */, 2};
+    const AcceptDecision d4 = tl.insertRelativeConstraint(key_epoch1_k2, gtsam::Pose3());
+    EXPECT_EQ(d4, AcceptDecision::ACCEPTED);
+    EXPECT_TRUE(tl.hasConstraint(key_epoch1_k2));
+    EXPECT_TRUE(tl.isIntervalLioConstrained(2));
+    EXPECT_EQ(tl.diag().lio_accepted, 2);
+}
+
+TEST(LioRelativeFactor, NonZeroLeverArmPureRotationBodyTranslationZero)
+{
+    // Body rotates by 0.2 rad in yaw, zero body translation.
+    // LiDAR has non-zero lever arm T_B_L = (0.25m, 0, 0).
+    // Raw LiDAR translation displacement is ~0.05m != 0.
+    // Normalization through T_B_L before differencing must recover exactly 0 body translation.
+    ShadowTimeline tl(imuParams(), baseConfig());
+    const Sophus::SE3d T_B_L(Eigen::Quaterniond::Identity(), Eigen::Vector3d(0.25, 0.0, 0.0));
+    tl.setT_B_L(T_B_L);
+
+    const int64_t t0 = 15000000000ll;
+    const double omega_z = 2.0;  // 2.0 rad/s over 0.1s = 0.20 rad
+
+    // IMU: pure rotation at 2.0 rad/s
+    tl.feedImu(t0, gtsam::Vector3(0.0, 0.0, 9.81), gtsam::Vector3(0.0, 0.0, omega_z));
+    for (int i = 1; i <= 20; ++i)
+        tl.feedImu(t0 + static_cast<int64_t>(i) * 5000000ll,
+                   gtsam::Vector3(0.0, 0.0, 9.81), gtsam::Vector3(0.0, 0.0, omega_z));
+
+    ASSERT_GE(tl.anchorCount(), 2);
+
+    // LiDAR poses in world: T_W_L = T_W_B * T_B_L
+    const Sophus::SE3d T_W_B0(Eigen::Quaterniond::Identity(), Eigen::Vector3d::Zero());
+    const Sophus::SE3d T_W_B1(Eigen::Quaterniond(Eigen::AngleAxisd(0.20, Eigen::Vector3d::UnitZ())),
+                             Eigen::Vector3d::Zero());
+
+    const Sophus::SE3d T_W_L0 = T_W_B0 * T_B_L;
+    const Sophus::SE3d T_W_L1 = T_W_B1 * T_B_L;
+
+    // Verify raw LiDAR translation displacement is non-zero
+    const Eigen::Vector3d raw_lidar_trans_disp = T_W_L1.translation() - T_W_L0.translation();
+    EXPECT_GT(raw_lidar_trans_disp.norm(), 0.04);
+    std::cout << "[Lever Arm Audit] Raw LiDAR trans disp norm = " << raw_lidar_trans_disp.norm() << " m" << std::endl;
+
+    // Feed LIO poses
+    tl.feedLioPose(t0, T_W_L0);
+    tl.feedLioPose(t0 + 100000000ll, T_W_L1);
+
+    EXPECT_EQ(tl.diag().lio_rejected_innovation_trans, 0);
+    EXPECT_EQ(tl.diag().lio_rejected_innovation_rot, 0);
+    EXPECT_GE(tl.diag().lio_accepted, 1);
+
+    gtsam::Pose3 T_opt; gtsam::Vector3 v_opt; gtsam::imuBias::ConstantBias b_opt;
+    ASSERT_TRUE(tl.latestAnchor(T_opt, v_opt, b_opt));
+    std::cout << "[Lever Arm Audit] Optimized body translation norm = " << T_opt.translation().norm() << " m" << std::endl;
+    EXPECT_LT(T_opt.translation().norm(), 1e-3);
+    EXPECT_NEAR(T_opt.rotation().yaw(), 0.20, 1e-3);
+}
+
+TEST(GaugePrior, ExactlyOnePriorAddedAcrossManyAnchors)
+{
+    // Contract: One-time gauge priors (pose, vel, bias) -- never recurring source priors.
+    ShadowTimeline tl(imuParams(), baseConfig());
+    const int64_t t0 = 16000000000ll;
+    feedStaticImu(tl, t0, 10.0, 200);  // 10.0 s -> 100 anchor intervals
+
+    EXPECT_EQ(tl.anchorCount(), 101);
+    EXPECT_EQ(tl.diag().pose_priors_added, 1);
+    EXPECT_EQ(tl.diag().vel_priors_added, 1);
+    EXPECT_EQ(tl.diag().bias_priors_added, 1);
+}
+
+TEST(GraphRetention, UnboundedRetentionBeyond32AnchorsNoEviction)
+{
+    // Contract: unbounded_shadow retention mode (no hand-rolled 32-anchor eviction).
+    ShadowTimeline tl(imuParams(), baseConfig());
+    const int64_t t0 = 17000000000ll;
+    feedStaticImu(tl, t0, 5.0, 200);  // 5.0 s -> 50 intervals
+
+    EXPECT_GT(tl.anchorCount(), 32);
+    EXPECT_EQ(tl.anchorCount(), 51);
+    EXPECT_GE(tl.totalGraphFactors(), 100);
+
+    // Verify all anchors from 0 to 50 are retrievable and finite
+    for (int k = 0; k <= 50; ++k)
+    {
+        gtsam::Pose3 T; gtsam::Vector3 v; gtsam::imuBias::ConstantBias b;
+        ASSERT_TRUE(tl.anchorState(k, T, v, b)) << "Failed to retrieve anchor " << k;
+        EXPECT_LT(T.translation().norm(), 0.05);
+        EXPECT_LT(v.norm(), 0.05);
+    }
+}
+
+TEST(LioGate, OptimizerPosteriorUpdateDoesNotCorruptImuRef)
+{
+    // Contract: arrival-order-independent innovation gate.
+    // dT_imu_ref(k) is captured at interval close and is NEVER altered by subsequent
+    // optimizer updates.
+    ShadowTimeline tl(imuParams(), baseConfig());
+    const int64_t t0 = 18000000000ll;
+    const double a = 1.0;
+    const int64_t dt_imu = 5000000ll;
+
+    // Feed interval 0: [t0, t0 + 0.1s]
+    tl.feedImu(t0, gtsam::Vector3(a, 0.0, 9.81), gtsam::Vector3::Zero());
+    for (int i = 1; i <= 20; ++i)
+        tl.feedImu(t0 + static_cast<int64_t>(i) * dt_imu,
+                   gtsam::Vector3(a, 0.0, 9.81), gtsam::Vector3::Zero());
+
+    const gtsam::Pose3 ref0_before = tl.imuRef(0);
+
+    // Insert a relative constraint on interval 0 that shifts the posterior (innovation 0.075m < 1.0m gate)
+    const ConstraintKey key{0, 0, 0};
+    const gtsam::Pose3 shift_factor(gtsam::Rot3(), gtsam::Point3(0.080, 0.0, 0.0));
+    EXPECT_EQ(tl.insertRelativeConstraint(key, shift_factor), AcceptDecision::ACCEPTED);
+
+    // Check that posterior anchor state has shifted
+    gtsam::Pose3 T_0, T_1; gtsam::Vector3 v; gtsam::imuBias::ConstantBias b;
+    tl.anchorState(0, T_0, v, b);
+    tl.anchorState(1, T_1, v, b);
+    const gtsam::Pose3 posterior_rel = T_0.between(T_1);
+    std::cout << "[Arrival-Order Invariance] ref0_before = " << ref0_before.translation().x()
+              << ", posterior_rel = " << posterior_rel.translation().x() << std::endl;
+
+    // Check that stored IMU reference is bitwise invariant to optimizer updates
+    const gtsam::Pose3 ref0_after = tl.imuRef(0);
+    EXPECT_TRUE(ref0_before.equals(ref0_after, 1e-15));
+    EXPECT_NE(ref0_after.translation().x(), posterior_rel.translation().x());
+}
+
 }  // namespace

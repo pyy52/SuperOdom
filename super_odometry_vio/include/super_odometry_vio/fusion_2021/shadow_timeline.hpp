@@ -23,6 +23,7 @@
 
 #include <deque>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -67,6 +68,26 @@ enum class AcceptDecision
 };
 const char* toCString(AcceptDecision d);
 
+// Source constraint identifier: (source, epoch, k)
+// SOURCE_LIO = 0, SOURCE_VIO = 1 per design section 5.
+struct ConstraintKey
+{
+    uint8_t source{0};
+    uint32_t epoch{0};
+    int k{0};
+
+    bool operator<(const ConstraintKey& o) const
+    {
+        if (source != o.source) return source < o.source;
+        if (epoch != o.epoch) return epoch < o.epoch;
+        return k < o.k;
+    }
+    bool operator==(const ConstraintKey& o) const
+    {
+        return source == o.source && epoch == o.epoch && k == o.k;
+    }
+};
+
 // noise model with locked Pose3 tangent order [rotation(3), translation(3)]
 gtsam::SharedNoiseModel makePoseNoise(double sigma_rot_rad, double sigma_trans_m);
 
@@ -83,6 +104,9 @@ struct ShadowDiag
     int lio_rejected_innovation_rot{0};
     int lio_no_bracket{0};
     int lio_stale_skipped{0};
+    int pose_priors_added{0};
+    int vel_priors_added{0};
+    int bias_priors_added{0};
 };
 
 // High-rate predicted body state at an arbitrary measurement time.
@@ -115,6 +139,10 @@ class ShadowTimeline
     void feedLioPose(int64_t stamp_ns, const Sophus::SE3d& T_W_L,
                      uint32_t lio_epoch = 0);
 
+    // Insert a relative constraint with explicit key and one-shot deduplication.
+    AcceptDecision insertRelativeConstraint(const ConstraintKey& key,
+                                             const gtsam::Pose3& T_Bi_Bj);
+
     // Latest optimized anchor state + high-rate prediction to stamp_ns.
     bool latestAnchor(gtsam::Pose3& T_W_B, gtsam::Vector3& v_W,
                       gtsam::imuBias::ConstantBias& bias) const;
@@ -122,6 +150,30 @@ class ShadowTimeline
 
     const ShadowDiag& diag() const { return diag_; }
     int anchorCount() const { return static_cast<int>(anchor_stamps_.size()); }
+
+    // Read-only audit accessors
+    const gtsam::Pose3& imuRef(int k) const { return dT_imu_ref_.at(k); }
+    bool anchorState(int k, gtsam::Pose3& T_W_B, gtsam::Vector3& v_W,
+                     gtsam::imuBias::ConstantBias& bias) const
+    {
+        if (k < 0 || k >= static_cast<int>(anchor_stamps_.size())) return false;
+        T_W_B = anchor_T_W_B_[k];
+        v_W = anchor_v_W_[k];
+        bias = anchor_bias_[k];
+        return true;
+    }
+    bool hasConstraint(const ConstraintKey& key) const
+    {
+        return inserted_constraints_.count(key) > 0;
+    }
+    bool isIntervalLioConstrained(int k) const
+    {
+        return lio_constrained_intervals_.count(k) > 0;
+    }
+    size_t totalGraphFactors() const
+    {
+        return isam2_.getFactorsUnsafe().size();
+    }
 
   private:
     using Key = gtsam::Key;
@@ -166,8 +218,9 @@ class ShadowTimeline
     // that could include source factors for this interval.
     std::vector<gtsam::Pose3> dT_imu_ref_;
 
-    // one-shot immutable LIO constraints already inserted: interval k -> id
-    std::map<int, uint64_t> inserted_lio_;
+    // one-shot immutable constraints: key (source, epoch, k)
+    std::set<ConstraintKey> inserted_constraints_;
+    std::set<int> lio_constrained_intervals_;
 
     std::deque<LioSample> lio_buf_;
     uint32_t current_lio_epoch_{0};
