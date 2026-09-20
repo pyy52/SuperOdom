@@ -139,6 +139,11 @@ class ShadowTimeline
     void feedLioPose(int64_t stamp_ns, const Sophus::SE3d& T_W_L,
                      uint32_t lio_epoch = 0);
 
+    // Look up or interpolate LIO source pose at a given timestamp within an epoch.
+    // Double-sided bracketing within max_interpolation_gap_sec, translation LERP, rotation SLERP.
+    bool lookupLioPoseAt(uint32_t epoch, int64_t stamp_ns,
+                         Sophus::SE3d& T_W_L) const;
+
     // Insert a relative constraint with explicit key and one-shot deduplication.
     AcceptDecision insertRelativeConstraint(const ConstraintKey& key,
                                              const gtsam::Pose3& T_Bi_Bj);

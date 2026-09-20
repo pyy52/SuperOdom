@@ -118,50 +118,56 @@ void ShadowTimeline::closeInterval(int k)
     const int64_t t_j = anchor_stamps_[k + 1];
 
     gtsam::PreintegratedImuMeasurements pim(imu_params_, anchor_bias_[k]);
-    bool bracketed = false;
-    int64_t t_prev = t_i;
+    int64_t covered_until_ns = t_i;
+    bool gap_detected = false;
     for (const auto& s : imu_buf_)
     {
         if (s.stamp_ns <= t_i) continue;
 
         if (s.stamp_ns < t_j)
         {
-            const double dt = static_cast<double>(s.stamp_ns - t_prev) * 1e-9;
+            const double dt = static_cast<double>(s.stamp_ns - covered_until_ns) * 1e-9;
             if (dt <= 0.0 || dt > config_.max_imu_dt_sec)
             {
                 ++diag_.imu_dropped;
-                t_prev = s.stamp_ns;
+                gap_detected = true;
+                covered_until_ns = s.stamp_ns;
                 continue;
             }
             pim.integrateMeasurement(s.acc, s.gyro, dt);
-            t_prev = s.stamp_ns;
-            bracketed = true;
+            covered_until_ns = s.stamp_ns;
         }
         else // s.stamp_ns >= t_j
         {
-            // Exact boundary clamping under Zero-Order Hold (ZOH):
-            // Integrate remaining sub-interval [t_prev, t_j] using this bracketing sample.
-            const double dt = static_cast<double>(t_j - t_prev) * 1e-9;
+            // Exact boundary clamping under Zero-Order Hold (right-sample ZOH policy):
+            // The terminal sub-interval [covered_until_ns, t_j] is integrated using this bracketing sample s.
+            const double dt = static_cast<double>(t_j - covered_until_ns) * 1e-9;
             if (dt > 0.0)
             {
                 if (dt > config_.max_imu_dt_sec)
                 {
                     ++diag_.imu_dropped;
+                    gap_detected = true;
                 }
                 else
                 {
                     pim.integrateMeasurement(s.acc, s.gyro, dt);
-                    bracketed = true;
+                    covered_until_ns = t_j;
                 }
             }
-            t_prev = t_j;
+            else if (dt == 0.0)
+            {
+                // Exact sample landed on t_j
+                covered_until_ns = t_j;
+            }
             break;
         }
     }
-    if (!bracketed)
+    if (gap_detected || covered_until_ns != t_j)
     {
-        // No IMU coverage for the interval: leave it IMU-unconstrained this
-        // round (diagnosed); the anchor pair is only closed when covered.
+        // Interval not fully and continuously covered by IMU without gaps:
+        // leave it unclosed this round. The anchor pair is only closed when
+        // covered end-to-end without invalid gaps.
         return;
     }
     ++diag_.intervals_closed;
@@ -215,7 +221,15 @@ void ShadowTimeline::flushOptimizer()
 void ShadowTimeline::feedLioPose(int64_t stamp_ns, const Sophus::SE3d& T_W_L,
                                  uint32_t lio_epoch)
 {
-    current_lio_epoch_ = lio_epoch;
+    if (lio_epoch < current_lio_epoch_)
+    {
+        ++diag_.lio_stale_skipped;
+        return;
+    }
+    if (lio_epoch > current_lio_epoch_)
+    {
+        current_lio_epoch_ = lio_epoch;
+    }
     lio_buf_.push_back({stamp_ns, lio_epoch, T_W_L});
     while (lio_buf_.size() > 200) lio_buf_.pop_front();
     tryInsertLioFactors();
@@ -281,6 +295,72 @@ AcceptDecision ShadowTimeline::insertRelativeConstraint(
     return AcceptDecision::ACCEPTED;
 }
 
+bool ShadowTimeline::lookupLioPoseAt(uint32_t epoch, int64_t stamp_ns,
+                                     Sophus::SE3d& T_W_L) const
+{
+    const LioSample* s_exact = nullptr;
+    const LioSample* s_before = nullptr;
+    const LioSample* s_after = nullptr;
+
+    for (const auto& s : lio_buf_)
+    {
+        if (s.epoch != epoch) continue;
+
+        if (s.stamp_ns == stamp_ns)
+        {
+            s_exact = &s;
+            break;
+        }
+        if (s.stamp_ns < stamp_ns)
+        {
+            if (!s_before || s.stamp_ns > s_before->stamp_ns)
+            {
+                s_before = &s;
+            }
+        }
+        else // s.stamp_ns > stamp_ns
+        {
+            if (!s_after || s.stamp_ns < s_after->stamp_ns)
+            {
+                s_after = &s;
+            }
+        }
+    }
+
+    if (s_exact)
+    {
+        T_W_L = s_exact->T_W_L;
+        return true;
+    }
+
+    if (!s_before || !s_after)
+    {
+        return false;
+    }
+
+    const double gap_sec =
+        static_cast<double>(s_after->stamp_ns - s_before->stamp_ns) * 1e-9;
+    if (gap_sec <= 0.0 || gap_sec > config_.max_interpolation_gap_sec)
+    {
+        return false;
+    }
+
+    const double alpha =
+        static_cast<double>(stamp_ns - s_before->stamp_ns) /
+        static_cast<double>(s_after->stamp_ns - s_before->stamp_ns);
+
+    const Eigen::Vector3d trans =
+        (1.0 - alpha) * s_before->T_W_L.translation() +
+        alpha * s_after->T_W_L.translation();
+
+    const Eigen::Quaterniond q_before(s_before->T_W_L.unit_quaternion());
+    const Eigen::Quaterniond q_after(s_after->T_W_L.unit_quaternion());
+    const Eigen::Quaterniond q_interp = q_before.slerp(alpha, q_after);
+
+    T_W_L = Sophus::SE3d(q_interp, trans);
+    return true;
+}
+
 void ShadowTimeline::tryInsertLioFactors()
 {
     if (last_closed_k_ < 0 || !T_B_L_set_) return;
@@ -299,33 +379,18 @@ void ShadowTimeline::tryInsertLioFactors()
         const int64_t t_i = anchor_stamps_[k];
         const int64_t t_j = anchor_stamps_[k + 1];
 
-        // Bracketing LIO samples in the SAME epoch.
-        const LioSample* s_i = nullptr;
-        const LioSample* s_j = nullptr;
-        for (const auto& s : lio_buf_)
-        {
-            if (s.epoch != current_lio_epoch_) continue;
-            if (s.stamp_ns <= t_i &&
-                (!s_i || s.stamp_ns > s_i->stamp_ns))
-                s_i = &s;
-            if (s.stamp_ns >= t_j && !s_j) s_j = &s;
-        }
-        if (!s_i || !s_j)
+        Sophus::SE3d T_W_L_i, T_W_L_j;
+        if (!lookupLioPoseAt(current_lio_epoch_, t_i, T_W_L_i) ||
+            !lookupLioPoseAt(current_lio_epoch_, t_j, T_W_L_j))
         {
             ++diag_.lio_no_bracket;
             continue;  // try later: more samples may arrive for this interval
         }
-        if ((s_j->stamp_ns - s_i->stamp_ns) * 1e-9 >
-            config_.max_interpolation_gap_sec)
-        {
-            ++diag_.lio_no_bracket;
-            continue;
-        }
 
         // Body-frame differencing (gate-review correction 2):
         // T_W_B = T_W_L * inverse(T_B_L), then T_Bi_Bj = between(T_W_Bi, T_W_Bj).
-        const Sophus::SE3d T_W_Bi = s_i->T_W_L * T_B_L_.inverse();
-        const Sophus::SE3d T_W_Bj = s_j->T_W_L * T_B_L_.inverse();
+        const Sophus::SE3d T_W_Bi = T_W_L_i * T_B_L_.inverse();
+        const Sophus::SE3d T_W_Bj = T_W_L_j * T_B_L_.inverse();
         const gtsam::Pose3 T_W_Bi_g(
             gtsam::Rot3(T_W_Bi.rotationMatrix()),
             gtsam::Point3(T_W_Bi.translation()));
@@ -361,7 +426,16 @@ PredictedState ShadowTimeline::propagateTo(int64_t stamp_ns)
     PredictedState out;
     if (anchor_stamps_.empty()) return out;
     out.stamp_ns = stamp_ns;
-    const int k = static_cast<int>(anchor_stamps_.size()) - 1;
+
+    // Select latest anchor k such that anchor_stamps_[k] <= stamp_ns
+    auto it = std::upper_bound(anchor_stamps_.begin(), anchor_stamps_.end(), stamp_ns);
+    if (it == anchor_stamps_.begin())
+    {
+        // Requested timestamp is before the earliest anchor
+        return out;
+    }
+    const int k = static_cast<int>((it - anchor_stamps_.begin()) - 1);
+
     gtsam::PreintegratedImuMeasurements pim(imu_params_, anchor_bias_[k]);
     int64_t t_prev = anchor_stamps_[k];
     for (const auto& s : imu_buf_)

@@ -510,7 +510,8 @@ TEST(GraphRetention, UnboundedRetentionBeyond32AnchorsNoEviction)
 
     EXPECT_GT(tl.anchorCount(), 32);
     EXPECT_EQ(tl.anchorCount(), 51);
-    EXPECT_GE(tl.totalGraphFactors(), 100);
+    // Exact factor count: 3 initial priors + 50 ImuFactors + 50 bias BetweenFactors = 103
+    EXPECT_EQ(tl.totalGraphFactors(), 103);
 
     // Verify all anchors from 0 to 50 are retrievable and finite
     for (int k = 0; k <= 50; ++k)
@@ -557,6 +558,208 @@ TEST(LioGate, OptimizerPosteriorUpdateDoesNotCorruptImuRef)
     const gtsam::Pose3 ref0_after = tl.imuRef(0);
     EXPECT_TRUE(ref0_before.equals(ref0_after, 1e-15));
     EXPECT_NE(ref0_after.translation().x(), posterior_rel.translation().x());
+}
+
+TEST(AnchorBoundaryIntegration, NonConstantBoundarySampleOwnership)
+{
+    // Reviewer finding B-05 / A2: Lock right-sample ZOH boundary policy.
+    // Interval [0.0, 0.100s] with non-constant step input across boundary:
+    // t = 0.098s: omega_z = 1.0 rad/s
+    // t = 0.103s: omega_z = 3.0 rad/s
+    // boundary t_j = 0.100s
+    //
+    // Under Right-Sample ZOH:
+    // Subsegment 1: [0.0, 0.098s] (dt = 0.098s) integrated with omega_z = 1.0 rad/s -> delta_yaw = 0.098 rad
+    // Subsegment 2: [0.098, 0.100s] (dt = 0.002s) integrated with sample at 0.103s (omega_z = 3.0 rad/s) -> delta_yaw = 0.006 rad
+    // Expected total yaw = 0.098 + 0.006 = 0.104 rad.
+    // (Under Left-Sample ZOH, subsegment 2 would use omega_z = 1.0 rad/s -> delta_yaw = 0.002 rad -> total 0.100 rad).
+    ShadowTimeline tl(imuParams(), baseConfig());
+    const int64_t t0 = 20000000000ll;
+    // Feed 10ms samples from t0 to t0 + 90ms with omega_z = 1.0 rad/s (all dt <= max_imu_dt_sec 0.05s)
+    for (int i = 0; i <= 9; ++i)
+    {
+        tl.feedImu(t0 + static_cast<int64_t>(i) * 10000000ll,
+                   gtsam::Vector3(0.0, 0.0, 9.81), gtsam::Vector3(0.0, 0.0, 1.0));
+    }
+    // Sample at 98ms with omega_z = 1.0 rad/s (dt = 8ms <= 50ms)
+    tl.feedImu(t0 + 98000000ll, gtsam::Vector3(0.0, 0.0, 9.81), gtsam::Vector3(0.0, 0.0, 1.0));
+    // Boundary crossing sample at 103ms with omega_z = 3.0 rad/s (dt = 5ms <= 50ms)
+    tl.feedImu(t0 + 103000000ll, gtsam::Vector3(0.0, 0.0, 9.81), gtsam::Vector3(0.0, 0.0, 3.0));
+
+    ASSERT_EQ(tl.diag().intervals_closed, 1);
+    const double yaw_ref = tl.imuRef(0).rotation().yaw();
+    EXPECT_NEAR(yaw_ref, 0.104, 1e-4);
+    // Explicitly assert it does NOT match left-sample ZOH (0.100)
+    EXPECT_GT(std::abs(yaw_ref - 0.100), 0.003);
+}
+
+TEST(AnchorBoundaryIntegration, InvalidInternalGapDoesNotCloseInterval)
+{
+    // Reviewer finding B-05 / A2: Partial invalid internal gap (> max_imu_dt_sec)
+    // must NOT close an interval with incomplete integration.
+    ShadowConfig c = baseConfig();
+    c.max_imu_dt_sec = 0.02;  // 20 ms threshold
+    ShadowTimeline tl(imuParams(), c);
+    const int64_t t0 = 21000000000ll;
+    // Sample at t0
+    tl.feedImu(t0, gtsam::Vector3(0.0, 0.0, 9.81), gtsam::Vector3::Zero());
+    // Valid segment: dt = 0.010s <= max_imu_dt_sec (0.02s)
+    tl.feedImu(t0 + 10000000ll, gtsam::Vector3(0.0, 0.0, 9.81), gtsam::Vector3::Zero());
+    // Invalid internal gap: dt = 0.050s > max_imu_dt_sec (0.02s)
+    tl.feedImu(t0 + 60000000ll, gtsam::Vector3(0.0, 0.0, 9.81), gtsam::Vector3::Zero());
+    // Boundary-crossing sample at t0 + 0.105s (crosses t1 = t0 + 0.100s)
+    tl.feedImu(t0 + 105000000ll, gtsam::Vector3(0.0, 0.0, 9.81), gtsam::Vector3::Zero());
+
+    // Invariant: interval 0 must NOT be closed because of the internal gap
+    EXPECT_EQ(tl.diag().intervals_closed, 0);
+    EXPECT_GT(tl.diag().imu_dropped, 0);
+    EXPECT_EQ(tl.totalGraphFactors(), 0);  // Unclosed interval is not flushed to ISAM2
+}
+
+TEST(LioPoseBuffer, OutOfOrderFutureSampleDoesNotShadowEndpoint)
+{
+    // Reviewer finding B-01 / A4.1: Arrival-order independent right endpoint selection.
+    // A future sample arriving before the true endpoint must NOT shadow the true endpoint.
+    ShadowTimeline tl(imuParams(), baseConfig());
+    const int64_t t0 = 22000000000ll;
+    // Feed 0.2s of IMU to establish intervals 0 and 1
+    feedStaticImu(tl, t0, 0.2, 200);
+    ASSERT_GE(tl.diag().intervals_closed, 2);
+
+    // Static rig: ground truth pose is identity
+    const Sophus::SE3d pose_0 = Sophus::SE3d();
+    // Future sample arrives with 2.0m displacement (would violate 1.0m innovation gate if mistakenly chosen)
+    const Sophus::SE3d pose_future(Eigen::Quaterniond::Identity(), Eigen::Vector3d(2.0, 0.0, 0.0));
+    const Sophus::SE3d pose_1 = Sophus::SE3d();
+
+    // Feed in out-of-timestamp order:
+    tl.feedLioPose(t0, pose_0);                          // t = t0 (0.0s)
+    tl.feedLioPose(t0 + 300000000ll, pose_future);       // t = t0 + 0.30s (arrives FIRST)
+    tl.feedLioPose(t0 + 100000000ll, pose_1);            // t = t0 + 0.10s (arrives LATER)
+
+    // Interval 0 [t0, t0 + 0.1s] must use pose_1 (identity), NOT pose_future (2.0m)
+    EXPECT_TRUE(tl.isIntervalLioConstrained(0));
+    EXPECT_EQ(tl.diag().lio_accepted, 1);
+    EXPECT_EQ(tl.diag().lio_rejected_innovation_trans, 0);
+
+    Sophus::SE3d T_lookup;
+    ASSERT_TRUE(tl.lookupLioPoseAt(0, t0 + 100000000ll, T_lookup));
+    EXPECT_NEAR(T_lookup.translation().norm(), 0.0, 1e-5);
+}
+
+TEST(LioPoseBuffer, JitteredSamplesInterpolatedToAnchorTimes)
+{
+    // Reviewer finding B-03 / Section 3: Source pose interpolation contract.
+    // LIO samples with timestamp jitter around anchors must be linearly interpolated
+    // in translation and SLERP-interpolated in rotation to the exact anchor times.
+    ShadowTimeline tl(imuParams(), baseConfig());
+    const int64_t t0 = 23000000000ll;  // 23.0s
+    // Feed static IMU for 0.2s to establish intervals 0 and 1
+    feedStaticImu(tl, t0, 0.2, 200);
+
+    // Simulated trajectory: constant velocity v_x = 2.0 m/s, omega_z = 0.5 rad/s
+    // Anchors are at t0 (0.0s) and t0 + 0.100s.
+    // Feed jittered samples:
+    // Sample a: t = t0 - 0.02s (-20ms) -> x = -0.04m, yaw = -0.010 rad
+    // Sample b: t = t0 + 0.03s (+30ms) -> x = +0.06m, yaw = +0.015 rad
+    // Sample c: t = t0 + 0.08s (+80ms) -> x = +0.16m, yaw = +0.040 rad
+    // Sample d: t = t0 + 0.13s (+130ms)-> x = +0.26m, yaw = +0.065 rad
+    auto makePose = [](double x, double yaw) {
+        Eigen::Quaterniond q(Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()));
+        return Sophus::SE3d(q, Eigen::Vector3d(x, 0.0, 0.0));
+    };
+
+    tl.feedLioPose(t0 - 20000000ll, makePose(-0.04, -0.010));
+    tl.feedLioPose(t0 + 30000000ll, makePose(0.06, 0.015));
+    tl.feedLioPose(t0 + 80000000ll, makePose(0.16, 0.040));
+    tl.feedLioPose(t0 + 130000000ll, makePose(0.26, 0.065));
+
+    // Verify lookupLioPoseAt directly
+    Sophus::SE3d T_L0, T_L1;
+    ASSERT_TRUE(tl.lookupLioPoseAt(0, t0, T_L0));
+    ASSERT_TRUE(tl.lookupLioPoseAt(0, t0 + 100000000ll, T_L1));
+
+    // At t0: alpha = (0 - (-0.02)) / (0.03 - (-0.02)) = 0.02 / 0.05 = 0.4
+    // x = -0.04 + 0.4 * 0.10 = 0.000m, yaw = -0.010 + 0.4 * 0.025 = 0.000 rad
+    EXPECT_NEAR(T_L0.translation().x(), 0.0, 1e-4);
+    EXPECT_NEAR(gtsam::Rot3(T_L0.rotationMatrix()).yaw(), 0.0, 1e-4);
+
+    // At t0 + 0.100s: alpha = (0.10 - 0.08) / (0.13 - 0.08) = 0.02 / 0.05 = 0.4
+    // x = 0.16 + 0.4 * 0.10 = 0.200m, yaw = 0.040 + 0.4 * 0.025 = 0.050 rad
+    EXPECT_NEAR(T_L1.translation().x(), 0.20, 1e-4);
+    EXPECT_NEAR(gtsam::Rot3(T_L1.rotationMatrix()).yaw(), 0.05, 1e-4);
+
+    // Relative displacement across the 0.1s interval must be exactly (0.20m, 0.05rad)
+    Sophus::SE3d T_rel = T_L0.inverse() * T_L1;
+    EXPECT_NEAR(T_rel.translation().x(), 0.20, 1e-4);
+    EXPECT_NEAR(gtsam::Rot3(T_rel.rotationMatrix()).yaw(), 0.05, 1e-4);
+
+    // Interval 0 must be constrained and accepted
+    EXPECT_TRUE(tl.isIntervalLioConstrained(0));
+    EXPECT_EQ(tl.diag().lio_accepted, 1);
+}
+
+TEST(SourceEpoch, DelayedOldEpochCannotRollbackCurrentEpoch)
+{
+    // Reviewer finding B-02 / A4.2: Monotonic source epoch enforcement.
+    // A delayed old-epoch sample arriving after a new epoch has been observed
+    // must be rejected and must not roll back current_lio_epoch_.
+    ShadowTimeline tl(imuParams(), baseConfig());
+    const int64_t t0 = 24000000000ll;
+    feedStaticImu(tl, t0, 0.2, 200);
+
+    // Epoch 0 sample arrives
+    tl.feedLioPose(t0, Sophus::SE3d(), 0);
+
+    // Reboot / epoch advance: epoch 1 sample arrives
+    tl.feedLioPose(t0 + 50000000ll, Sophus::SE3d(), 1);
+
+    // Stale delayed epoch 0 sample arrives
+    tl.feedLioPose(t0 + 100000000ll, Sophus::SE3d(), 0);
+
+    // Stale sample must be skipped and diagnosed
+    EXPECT_EQ(tl.diag().lio_stale_skipped, 1);
+    EXPECT_FALSE(tl.isIntervalLioConstrained(0));
+    EXPECT_EQ(tl.diag().lio_accepted, 0);
+
+    // New epoch 1 sample completes the interval [t0 + 0.05, t0 + 0.15]
+    tl.feedLioPose(t0 + 150000000ll, Sophus::SE3d(), 1);
+    Sophus::SE3d T_interp;
+    EXPECT_TRUE(tl.lookupLioPoseAt(1, t0 + 100000000ll, T_interp));
+}
+
+TEST(HighRateState, PropagateToHistoricalDynamicTimestampUsesCorrectAnchor)
+{
+    // Reviewer finding B-04 / Section 2: High-rate propagation for historical/mid-trajectory timestamps.
+    // propagateTo(t) must select anchor k such that anchor_stamps_[k] <= t,
+    // rather than always starting from the newest anchor.
+    ShadowTimeline tl(imuParams(), baseConfig());
+    const int64_t t0 = 25000000000ll;
+
+    // Feed 1.0s of IMU with constant acceleration a_x = 2.0 m/s^2 at 200 Hz
+    const double a_x = 2.0;
+    const int64_t dt_ns = 5000000ll;  // 5 ms
+    for (int i = 0; i <= 200; ++i)
+    {
+        tl.feedImu(t0 + static_cast<int64_t>(i) * dt_ns,
+                   gtsam::Vector3(a_x, 0.0, 9.81), gtsam::Vector3::Zero());
+    }
+
+    ASSERT_EQ(tl.anchorCount(), 11);  // anchors 0 to 10 (t0 to t0 + 1.0s)
+    ASSERT_EQ(tl.diag().intervals_closed, 10);
+
+    // Query historical timestamp at t = t0 + 0.55s (550 ms)
+    // Anchor 5 is at 0.50s; Anchor 10 is at 1.00s.
+    // Analytic state at 0.55s:
+    // v_x(0.55) = a_x * 0.55 = 1.10 m/s
+    // p_x(0.55) = 0.5 * a_x * 0.55^2 = 0.3025 m
+    // If it started from newest anchor (1.00s), v_x would be >= 2.0 m/s and p_x >= 1.0 m.
+    const auto st = tl.propagateTo(t0 + 550000000ll);
+    ASSERT_TRUE(st.valid);
+    EXPECT_NEAR(st.v_W.x(), 1.10, 0.05);
+    EXPECT_NEAR(st.T_W_B.translation().x(), 0.3025, 0.05);
+    // Strictly verify it did NOT return newest-anchor state (p_x ~ 1.0m)
+    EXPECT_LT(st.T_W_B.translation().x(), 0.50);
 }
 
 }  // namespace
