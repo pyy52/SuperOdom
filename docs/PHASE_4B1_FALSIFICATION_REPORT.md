@@ -1,14 +1,32 @@
 # PHASE 4B-1 Falsification & Hardening Report
 
-**Candidate Baseline Commit:** `4c4006dc63cfcfbf67e3a9d94fc2d4090ea00a2a` (`4c4006d`)  
+**Baseline Commit:** `7a9a943c30947d771b5cb8fc7d2ba28e14350ce2`  
+**Candidate Baseline Commit (in tree):** `4c4006d587e804b91e15414b4119f10350bbb85a`  
+**Superseded Planning SHA:** `4c4006dc63cfcfbf67e3a9d94fc2d4090ea00a2a` (superseded by actual git SHA `4c4006d587e804b91e15414b4119f10350bbb85a`)  
+**Hardened Fix Commit:** `70617e5896b6c5533107f8d712d043ff9caee48d`  
 **Audit Target:** Super Odometry Phase 4B-1 Shadow Central Backend (2021 Fusion Timeline, LIO-only round)  
 **Status:** **READY FOR MASTER REVIEW**
 
 ---
 
-## 1. Executive Summary
+## 1. Commit Provenance & Test Accounting Disambiguation
 
-An adversarial contract falsification audit was conducted against candidate commit `4c4006d`. The audit evaluated all signed invariant rules from `docs/FUSION_TIMELINE_DESIGN.md` and Phase 4A gate decisions:
+To preserve rigorous audit reproducibility, the commits and their respective validation records are strictly partitioned:
+
+| Milestone / State | 40-Character Commit SHA | Compare URL (vs Baseline) | Test Suite Accounting |
+|---|---|---|---|
+| **Phase 4A Baseline** | `7a9a943c30947d771b5cb8fc7d2ba28e14350ce2` | Baseline origin | N/A (Design doc only) |
+| **Phase 4B-1 Candidate** | `4c4006d587e804b91e15414b4119f10350bbb85a` | [7a9a943...4c4006d](https://github.com/pyy52/SuperOdom/compare/7a9a943c30947d771b5cb8fc7d2ba28e14350ce2...4c4006d587e804b91e15414b4119f10350bbb85a) | **41 test records** (10 shadow fusion tests, 31 other) |
+| **Phase 4B-1 Hardened** | `70617e5896b6c5533107f8d712d043ff9caee48d` | [7a9a943...70617e5](https://github.com/pyy52/SuperOdom/compare/7a9a943c30947d771b5cb8fc7d2ba28e14350ce2...70617e5896b6c5533107f8d712d043ff9caee48d) | **50 test records** (18 shadow fusion tests, 32 other) |
+
+> [!NOTE]
+> Early task notes referenced `4c4006dc63cfcfbf67e3a9d94fc2d4090ea00a2a`. The actual git object created in the repository and pushed to GitHub is `4c4006d587e804b91e15414b4119f10350bbb85a` (both share prefix `4c4006d`). All audits and diffs operate strictly on the genuine git object `4c4006d587e804b91e15414b4119f10350bbb85a`.
+
+---
+
+## 2. Executive Summary
+
+An adversarial contract falsification audit was conducted against candidate commit `4c4006d587e804b91e15414b4119f10350bbb85a`. The audit evaluated all signed invariant rules from `docs/FUSION_TIMELINE_DESIGN.md` and Phase 4A gate decisions:
 1. Immutable IMU relative prediction reference $dT\_imu\_ref(k, k+1)$ under non-zero initial velocity.
 2. Exact measurement-time anchor boundary integration under timestamp jitter.
 3. One-shot constraint deduplication with exact $(source, epoch, k)$ key identity.
@@ -18,14 +36,14 @@ An adversarial contract falsification audit was conducted against candidate comm
 7. Arrival-order optimizer invariance of the reference pose.
 
 ### Audit Findings Summary
-- **Critical Bugs Proven:** 3 signed-contract violations and 1 optimizer estimate refresh bug were mathematically and experimentally proven on candidate `4c4006d`.
+- **Critical Bugs Proven:** 3 signed-contract violations and 1 optimizer estimate refresh bug were mathematically and experimentally proven on candidate `4c4006d587e804b91e15414b4119f10350bbb85a`.
 - **Hardening Fixes Implemented:** Minimal, non-architectural invariant fixes applied directly to `super_odometry_vio/include/super_odometry_vio/fusion_2021/shadow_timeline.hpp` and `super_odometry_vio/src/fusion_2021/shadow_timeline.cpp`.
 - **Test Suite Expansion:** Expanded `test_fusion_shadow` from 10 tests to 18 comprehensive tests.
 - **Verification:** 100% green across all 50 workspace test records (44 gtest unit tests).
 
 ---
 
-## 2. Proven Bugs & Numerical Evidence
+## 3. Proven Bugs & Numerical Evidence
 
 ### Bug 1: `dT_imu_ref_[k]` Disregarded Initial Velocity & Gravity Rotation
 - **Contract Rule:** "Every anchor interval stores an immutable IMU-only relative prediction $dT\_imu\_ref(k, k+1)$, captured BEFORE any optimization update touches the interval."
@@ -120,7 +138,7 @@ An adversarial contract falsification audit was conducted against candidate comm
 
 ---
 
-## 3. Invariant Verification Audit
+## 4. Invariant Verification Audit
 
 ### A. Non-Zero Lever Arm Pure Rotation Invariant
 - **Setup:** Body rotated by $\theta = 0.20\,\text{rad}$ in yaw, zero body translation ($p_{WB} = 0$). Lever arm $T_{BL} = (0.25\,\text{m}, 0, 0)$.
@@ -154,7 +172,7 @@ An adversarial contract falsification audit was conducted against candidate comm
 
 ---
 
-## 4. Test Suite Accounting
+## 5. Test Suite Accounting
 
 ### Workspace Summary
 Running `colcon test-result --all --verbose` with `LD_LIBRARY_PATH=/usr/local/lib`:
@@ -193,7 +211,7 @@ Summary: 50 tests, 0 errors, 0 failures, 0 skipped
 
 ---
 
-## 5. Master Review Declaration
+## 6. Master Review Declaration
 
 All contract falsification criteria have been executed and verified. Proven defects in the candidate implementation `4c4006d` have been resolved with minimal, correct implementations. Workspace test suites are 100% green.
 
