@@ -293,7 +293,6 @@ AcceptDecision ShadowTimeline::insertRelativeConstraint(
         return AcceptDecision::REJECT_DUPLICATE;
     }
 
-    ConstraintSlot slot{key.source, k};
     if (occupied_slots_.count(slot))
     {
         // If slot is occupied by a different epoch, cross epoch rejection
@@ -379,7 +378,7 @@ bool ShadowTimeline::lookupLioPoseAt(uint32_t epoch, int64_t stamp_ns,
     }
 
     const int64_t gap_ns = s_after->stamp_ns - s_before->stamp_ns;
-    if (gap_ns <= 0 || gap_ns > config_.max_interpolation_gap_ns)
+    std::cout << "gap: " << gap_ns << " max: " << config_.max_interpolation_gap_ns << std::endl; if (gap_ns <= 0 || gap_ns > config_.max_interpolation_gap_ns)
     {
         return false;
     }

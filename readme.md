@@ -22,7 +22,7 @@
 
 ## 📰 News
 
-- 🔍 **2026/09 — Phase 4B-1 架构审计交付**: 融合时间线（Shadow Timeline）后端闭环已完成。请查阅 [**外部专家审计交付指南 (docs/EXPERT_AUDIT_HANDOVER.md)**](./docs/EXPERT_AUDIT_HANDOVER.md) 与 [GitHub Release v4b1-audit-r3](https://github.com/pyy52/SuperOdom/releases/tag/v4b1-audit-r3)。
+- 🔍 **2026/09 — Phase 4B-1 R4 架构审计交付**: 融合时间线（Shadow Timeline）生命周期及间隙安全策略已闭环。请查阅 [**R4 架构设计与证据报告 (docs/PHASE_4B1_R4_DESIGN_ADDENDUM_REVIEW.md)**](./docs/PHASE_4B1_R4_DESIGN_ADDENDUM_REVIEW.md)。
 
 - 🔔**2025/10** — Adapt super odometry on humanoid robot. Please check the "humanoid_ros2"  branch 
 

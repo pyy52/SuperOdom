@@ -21,9 +21,11 @@ ShadowConfig baseConfig()
     ShadowConfig c;
     c.anchor_rate_hz = 10.0;
     c.max_constraint_lateness_ns = 500000000ll;
+    c.source_reorder_horizon_ns = 300000000ll;
     c.max_imu_dt_ns = 50000000ll;
     c.max_interpolation_gap_ns = 150000000ll;
     c.source_reorder_horizon_ns = 100000000ll;
+    
     return c;
 }
 
@@ -290,7 +292,6 @@ TEST(HighRateState, PropagationBetweenAnchors)
     const auto mid = tl.propagateTo(t0 + 555000000ll);  // t0 + 0.555 s
     ASSERT_TRUE(mid.valid);
     EXPECT_LT(mid.T_W_B.translation().norm(), 1e-3);
-    const auto after = tl.propagateTo(t0 + 2000000000ll);
     const auto after = tl.propagateTo(t0 + 1000000000ll);
     ASSERT_TRUE(after.valid);
     EXPECT_LT(after.T_W_B.translation().norm(), 1e-3);
@@ -406,7 +407,6 @@ TEST(AnchorBoundaryIntegration, JitteredSamplesEndpointCaseB_TranslationVelocity
     EXPECT_NEAR(tl.imuRef(0).translation().x(), expected_p, 1e-5);
 }
 
-TEST(LioConstraintKey, DuplicateRejectionAndEpochSeparation)
 TEST(LioConstraintId, DuplicateRejectionAndEpochSeparation)
 {
     ShadowTimeline tl(imuParams(), baseConfig());
@@ -415,7 +415,6 @@ TEST(LioConstraintId, DuplicateRejectionAndEpochSeparation)
     ASSERT_GE(tl.anchorCount(), 5);
 
     const int k = 1;
-    const ConstraintKey key_epoch0{0 /* SOURCE_LIO */, 0 /* epoch */, k};
     const ConstraintId key_epoch0{0 /* SOURCE_LIO */, 0 /* epoch */, k};
 
     // 1. Initial valid insertion
@@ -433,19 +432,17 @@ TEST(LioConstraintId, DuplicateRejectionAndEpochSeparation)
     EXPECT_EQ(tl.diag().lio_accepted, 1);
 
     // 3. Different epoch on already-constrained interval -> REJECT_DUPLICATE (interval one-shot immutable)
-    const ConstraintKey key_epoch1{0 /* SOURCE_LIO */, 1 /* epoch */, k};
     // 3. Different epoch on already-constrained interval -> REJECT_SLOT_OCCUPIED (interval one-shot immutable)
     const ConstraintId key_epoch1{0 /* SOURCE_LIO */, 1 /* epoch */, k};
     const AcceptDecision d3 = tl.insertRelativeConstraint(key_epoch1, gtsam::Pose3());
-    EXPECT_EQ(d3, AcceptDecision::REJECT_DUPLICATE);
-    EXPECT_EQ(tl.diag().lio_rejected_duplicate, 2);
+    
+    
     EXPECT_EQ(d3, AcceptDecision::REJECT_SLOT_OCCUPIED);
     EXPECT_EQ(tl.diag().lio_rejected_slot_occupied, 1);
     EXPECT_EQ(tl.diag().lio_rejected_duplicate, 1);
     EXPECT_EQ(tl.diag().lio_accepted, 1);
 
     // 4. New epoch on unconstrained interval k=2 -> ACCEPTED
-    const ConstraintKey key_epoch1_k2{0 /* SOURCE_LIO */, 1 /* epoch */, 2};
     const ConstraintId key_epoch1_k2{0 /* SOURCE_LIO */, 1 /* epoch */, 2};
     const AcceptDecision d4 = tl.insertRelativeConstraint(key_epoch1_k2, gtsam::Pose3());
     EXPECT_EQ(d4, AcceptDecision::ACCEPTED);
@@ -558,7 +555,6 @@ TEST(LioGate, OptimizerPosteriorUpdateDoesNotCorruptImuRef)
     const gtsam::Pose3 ref0_before = tl.imuRef(0);
 
     // Insert a relative constraint on interval 0 that shifts the posterior (innovation 0.075m < 1.0m gate)
-    const ConstraintKey key{0, 0, 0};
     const ConstraintId key{0, 0, 0};
     const gtsam::Pose3 shift_factor(gtsam::Rot3(), gtsam::Point3(0.080, 0.0, 0.0));
     EXPECT_EQ(tl.insertRelativeConstraint(key, shift_factor), AcceptDecision::ACCEPTED);
@@ -637,7 +633,6 @@ TEST(LioPoseBuffer, OutOfOrderFutureSampleDoesNotShadowEndpoint)
 {
     // Reviewer finding B-01 / A4.1: Arrival-order independent right endpoint selection.
     // A future sample arriving before the true endpoint must NOT shadow the true endpoint.
-    ShadowTimeline tl(imuParams(), baseConfig());
     ShadowConfig c = baseConfig();
     c.source_reorder_horizon_ns = 300000000ll; // large horizon to accept out-of-order 200ms
     ShadowTimeline tl(imuParams(), c);
