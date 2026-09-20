@@ -1,138 +1,323 @@
-# SuperOdom Phase 4B-1 融合时间线架构与实现 —— 外部专家审计与交付指南
-# (SuperOdom Phase 4B-1 External Expert Audit & Handover Guide)
+# SuperOdom ROS 2 Shadow Timeline — Phase 4B-1 Independent Audit Handover
 
-欢迎各位专家对本项目进行代码与数学架构审计！本文档旨在以最精炼、直观的方式，为您提供本次审计的**核心背景、代码仓库链接、关键文件导航、核心数学/工程争议点**以及**一键复现指南**。
+Dear reviewer,
 
----
+This package is provided for independent audit of the ROS 2 migration and reconstruction of the SuperOdom multi-sensor fusion backend, specifically the Phase 4B-1 **LIO-only Shadow Timeline**.
 
-## 1. 快速访问与交付资源 (Quick Links)
+The goal of this phase is not to maximize benchmark performance. The goal is to verify the semantic correctness of:
 
-* **GitHub 公开仓库**: [https://github.com/pyy52/SuperOdom](https://github.com/pyy52/SuperOdom)
-* **默认开发分支**: `ros2`
-* **最终审计目标 Commit**:
-  * 核心代码提交: `de6a3b0c63293442aca85ed3170f54e86f0e5104`
-  * 交付文档与补丁提交: `dda8b93a6f5ebe0220ef43fa3dcdd6117642399d`
-* **GitHub Release 页面**: [v4b1-audit-r3 (GitHub Release)](https://github.com/pyy52/SuperOdom/releases/tag/v4b1-audit-r3)
-* **离线交付包（Release Assets）**:
-  * `SuperOdom_Phase4B1_Core_de6a3b0.zip`: 核心源码与测试打包（纯净无多余缓存）
-  * `phase4b1_full.patch`: 从基线到当前的完整重构 Diff
-  * `phase4b1_r3_delta.patch`: 第 3 轮针对边界、插值与历元保护的修复 Diff
-
----
-
-## 2. 核心背景与重构目标 (Context & Objectives)
-
-SuperOdom 是一个多传感器融合里程计系统。在移植到 ROS 2 的过程中，我们针对旧版融合模块存在的**时钟混淆、IMU 预积分与雷达里程计未严格对齐、外参变换投影不严密**等问题，启动了 Phase 4B-1 重构任务：
-
-* **核心定位**: 影子融合时间线（`Shadow Timeline Backend`）。
-* **当前阶段范围**: **LIO-only 闭环**（仅融合 IMU 预积分与激光里程计高精相对位姿），为后续引入视觉特征点（VIO）和回环因子打牢底层数学地基。
-* **设计原则**:
-  1. **确定性时间网格 (Measurement-time Anchor Grid)**: 严禁依赖系统时钟或隐式 fallback，严格基于测量时间戳建立锚点。
-  2. **坐标系与外参一致性**: 严守体坐标系（Body/IMU Frame）与激光坐标系（LiDAR Frame）的刚体外参 $T_B^L$ 伴随变换，确保所有因子误差函数数学自洽。
-  3. **因果完备与不可变约束 (Causality & Immutability)**: 单调时钟历元保护，区间测量单次约束（One-shot constraint），杜绝乱序数据污染已构建的因子图。
-
----
-
-## 3. 专家重点审查文件清单 (Key Files to Review)
-
-建议专家重点审阅以下 4 个核心文件（可直接在 GitHub 网页上点击查看）：
-
-1. **架构与数学设计规范**:
-   * [`docs/FUSION_TIMELINE_DESIGN.md`](https://github.com/pyy52/SuperOdom/blob/ros2/docs/FUSION_TIMELINE_DESIGN.md)
-   * *重点看*: 时间网格锚点规划、外参刚体变换流向、因子图状态量定义。
-2. **核心接口定义 (C++ Header)**:
-   * [`super_odometry_vio/include/super_odometry_vio/fusion_2021/shadow_timeline.hpp`](https://github.com/pyy52/SuperOdom/blob/ros2/super_odometry_vio/include/super_odometry_vio/fusion_2021/shadow_timeline.hpp)
-   * *重点看*: `Anchor` 结构体、`LioMeasurement` 插值接口、时间线维护类 `ShadowTimeline` 的公有 API 与不变量契约。
-3. **核心算法实现 (C++ Source)**:
-   * [`super_odometry_vio/src/fusion_2021/shadow_timeline.cpp`](https://github.com/pyy52/SuperOdom/blob/ros2/super_odometry_vio/src/fusion_2021/shadow_timeline.cpp)
-   * *重点看*:
-     * `interpolateLioPose()`: 四元数 SLERP + 位置线性插值与边界保护。
-     * `addImuMeasurement()` / `integrateImuInterval()`: 跨区间样本归属与时长守恒（dt 守恒）。
-     * `addLioMeasurement()`: 单调历元过滤、门限检验（Gate）、因子图插入。
-     * `propagateHighRateState()`: 历史状态回放与高频状态外推。
-4. **针对性单元测试套件 (GTest)**:
-   * [`super_odometry_vio/test/test_fusion_shadow.cpp`](https://github.com/pyy52/SuperOdom/blob/ros2/super_odometry_vio/test/test_fusion_shadow.cpp)
-   * *包含 24 个专门编写的测试用例*，覆盖：
-     * 外参非零杠杆臂纯旋转下位移补偿验证（Lever-arm Audit）
-     * 乱序点云到达与乱序 IMU 的丢弃与因果保护验证
-     * 测量时间边界插值与抖动采样验证
-     * 优化后 IMU 参考真值不被污染的不可变性验证
-
----
-
-## 4. 请专家重点裁决的 4 大核心问题 (Core Audit Questions)
-
-### 问题 1：GTSAM IMU 预积分与体坐标系位姿因子的数学自洽性
-* **背景**: GTSAM 4.0 的 `ManifoldPreintegration::deltaXij_` 明确定义为相对于起始历元体坐标系 $b_i$ 的相对位姿增量：
-  $$\Delta R_{ij} = R_i^\top R_j, \quad \Delta p_{ij} = R_i^\top (p_j - p_i - v_i \Delta t - \frac{1}{2} g \Delta t^2)$$
-* **当前实现**: 我们将激光雷达测量的里程计增量 $T_{L_i}^{L_j}$，通过严格的外参变换转换至体坐标系：
-  $$T_{B_i}^{B_j} = T_B^L \cdot T_{L_i}^{L_j} \cdot (T_B^L)^{-1}$$
-  并在 $B$ 坐标系下构建 `BetweenFactor<Pose3>` 与 IMU 预积分因子联合优化。
-* **请专家评审**:
-  * 该体坐标系投影公式及与其对应的协方差变换在数学推导上是否严密无漏洞？
-  * 是否存在坐标系定义上的潜在隐患？
-
-### 问题 2：时间锚点网格（Anchor Grid）与测量插值的鲁棒性
-* **背景**: 激光雷达点云输出通常存在时间抖动（Jitter，如 99ms ~ 101ms），而 IMU 为高频数据（200Hz）。
-* **当前实现**:
-  * 采用基于激光到达时刻精确建立的 Measurement-time Grid，不强制量化到整十毫秒；
-  * 若激光帧时刻与区间边界存在微小偏差，利用前后相邻帧做 SLERP 插值对齐；
-  * 设定了严格的单调递增历元（Monotonic Epoch）和“单区间仅允许一次 LIO 约束（One-shot constraint）”。
-* **请专家评审**:
-  * 该设计在应对掉包、时钟漂移或偶发极大延迟（out-of-order/straggler）时，策略是否足够工业级鲁棒？有无死锁或区间悬空风险？
-
-### 问题 3：边界采样归属与积分时长守恒（Boundary dt Conservation）
-* **当前实现**:
-  * 两个相邻时间区间 $[t_k, t_{k+1}]$ 与 $[t_{k+1}, t_{k+2}]$ 之间，交界处的 IMU 采样点严格归属于单一侧，确保总积分时间 $\sum \Delta t_{\text{imu}} \equiv t_{\text{end}} - t_{\text{start}}$，杜绝重叠积分导致的速度/位置积分漂移。
-* **请专家评审**:
-  * 边界分配逻辑在非恒定采样率下的边界积分误差是否在可控范围内？
-
-### 问题 4：未来接入视觉（VIO）多模态因子的架构扩展性
-* **背景**: 当前为 LIO-only 影子后端。后续需要引入双目/单目视觉特征点重投影误差（Visual Feature Retraction）与回环检测因子（Loop Closure）。
-* **请专家评审**:
-  * 当前 `ShadowTimeline` 的状态容器、图因子管理与高频递推解耦架构，向 VIO 增广状态扩展时，是否存在架构瓶颈或需要提前预留的接口？
-
----
-
-## 5. 本地环境一键编译与测试复现 (Verification Guide)
-
-专家可在本地或通过提供的 Docker 镜像直接复现全部编译与单元测试：
-
-### 方式 A：基于 Docker 一键验证（最省心，环境完全隔离）
-
-```bash
-# 1. 克隆代码
-git clone https://github.com/pyy52/SuperOdom.git -b ros2
-cd SuperOdom
-
-# 2. 运行预装 GTSAM 4.0 及 ROS 2 Humble 的 Docker 容器
-docker run --rm -v $(pwd):/root/ros2_ws/src/SuperOdom superodom-ros2:latest bash -c "
-    source /opt/ros/humble/setup.bash
-    cd /root/ros2_ws
-    colcon build --packages-select super_odometry super_odometry_vio
-    export LD_LIBRARY_PATH=/usr/local/lib:\${LD_LIBRARY_PATH}
-    colcon test --packages-select super_odometry super_odometry_vio
-    colcon test-result --all --verbose
-    /root/ros2_ws/build/super_odometry_vio/test_fusion_shadow
-"
+```text
+factor graph state definition
+IMU preintegration reference construction
+measurement timestamp anchoring
+LIO/body frame normalization
+source epoch isolation
+one-shot adjacent factor insertion
+backend retention lifecycle
 ```
 
-### 方式 B：本地已有 ROS 2 Humble 环境
+---
+
+## 1. Source target and evidence package
+
+### Source target
+
+```text
+Repository: https://github.com/pyy52/SuperOdom
+Branch: ros2
+Source target commit: de6a3b0c63293442aca85ed3170f54e86f0e5104
+```
+
+### Evidence package
+
+```text
+Release: https://github.com/pyy52/SuperOdom/releases/tag/v4b1-audit-r3-evidence-v2
+Evidence ZIP: SuperOdom_Phase4B1_Core_de6a3b0_evidence_v2.zip
+Evidence ZIP SHA-256: be6d157e14a883e35d7d05971ef4736e0b54d90fc7ee6d4cf28ee4440dec6926
+```
+
+The evidence package is an external audit artifact generated from the clean source target commit above. It may contain logs and generated patches that are not part of the source commit itself.
+
+---
+
+## 2. Provenance chain
+
+```text
+Phase 4A baseline:
+7a9a943c30947d771b5cb8fc7d2ba28e14350ce2
+
+Phase 4B-1 candidate:
+4c4006d587e804b91e15414b4119f10350bbb85a
+
+Round 2 hardened:
+70617e5896b6c5533107f8d712d043ff9caee48d
+
+Round 3 audit target:
+de6a3b0c63293442aca85ed3170f54e86f0e5104
+```
+
+The early string:
+
+```text
+4c4006dc63cfcfbf67e3a9d94fc2d4090ea00a2a
+```
+
+is a superseded planning placeholder and must not be used as a candidate commit.
+
+---
+
+## 3. Core files for review
+
+```text
+docs/FUSION_TIMELINE_DESIGN.md
+docs/PHASE_4B1_FALSIFICATION_REPORT.md
+docs/PHASE_4B1_R3_CLOSURE_EVIDENCE.md
+super_odometry_vio/include/super_odometry_vio/fusion_2021/shadow_timeline.hpp
+super_odometry_vio/src/fusion_2021/shadow_timeline.cpp
+super_odometry_vio/test/test_fusion_shadow.cpp
+super_odometry_vio/CMakeLists.txt
+```
+
+Primary implementation functions to inspect:
+
+```text
+lookupLioPoseAt()
+closeInterval()
+insertRelativeConstraint()
+propagateTo()
+```
+
+---
+
+## 4. Signed Phase 4B-1 contract
+
+Please audit against the following contract:
+
+```text
+central state: T_W_B
+anchor grid: t_k = t0 + k * 0.1s
+immutable pre-fusion ΔT_imu_ref(k,k+1)
+all source gates use that immutable reference
+LIO T_W_L -> body frame before relative differencing
+GTSAM Pose3 tangent/noise order: [rotation(3), translation(3)]
+retention: unbounded_shadow
+external factor span: adjacent X_k -> X_{k+1} only
+constraint identity: one-shot (source, epoch, k)
+source epoch reset does not reset central graph
+Phase 4B-1: LIO only
+no silent dt=0.005 fallback
+gauge prior once only
+```
+
+The anchor grid is defined by **measurement timestamps**, not message arrival order.
+
+---
+
+## 5. Key audit questions
+
+### Q1 — IMU reference semantics
+
+Please verify that the immutable gate reference is not built as:
+
+```cpp
+Pose3(pim.deltaRij(), pim.deltaPij())
+```
+
+The R3 implementation claims to construct it via GTSAM state prediction:
+
+```cpp
+predicted_j = pim.predict(anchor_state_i, anchor_bias_i);
+dT_imu_ref = pose_i.between(predicted_j.pose());
+```
+
+Audit whether:
+
+```text
+initial velocity contribution is included
+gravity/state prediction is included
+bias used is the correct anchor/PIM bias
+reference is captured before external factors for the interval
+reference is never recomputed from optimized posterior states
+```
+
+---
+
+### Q2 — LIO anchor-time interpolation and frame conversion
+
+Please verify the claimed implementation sequence:
+
+```text
+1. lookup/interpolate T_W_L(t_i) at anchor timestamp t_i
+2. lookup/interpolate T_W_L(t_j) at anchor timestamp t_j
+3. convert each absolute pose to body:
+   T_W_B(t) = T_W_L(t) * inverse(T_B_L)
+4. build body relative measurement:
+   T_Bi_Bj = between(T_W_B(t_i), T_W_B(t_j))
+5. insert an adjacent factor X_i -> X_j only when j = i+1
+```
+
+Please specifically test:
+
+```text
+jittered LIO timestamps around anchors
+out-of-order LIO arrival
+exact anchor sample priority
+duplicate timestamps
+non-zero lever arm + body rotation
+```
+
+---
+
+### Q3 — source epoch and one-shot causality
+
+Please verify:
+
+```text
+current_lio_epoch_ never moves backward
+late old-epoch samples cannot insert factors
+old buffered samples cannot bracket new-epoch lookups
+central graph is not reset by source epoch changes
+one-shot identity is exactly (source, epoch, k)
+```
+
+Please also check whether rejected factor attempts consume one-shot identity or whether only accepted constraints do. If the design is ambiguous, flag it.
+
+---
+
+### Q4 — IMU interval boundary ownership
+
+The R3 implementation claims a **Right-Sample ZOH** policy:
+
+```text
+each subsegment [t_prev, t_next] uses the IMU sample at t_next
+terminal boundary segment [t_prev, t_j] uses the first sample with stamp >= t_j
+```
+
+Please verify:
+
+```text
+sum of integrated dt equals t_j - t_i
+continuous coverage is required before interval close
+gaps > max_imu_dt_sec prevent interval closure
+duplicate/out-of-order IMU timestamps do not create silent fallback
+no dt=0.005 is introduced
+```
+
+---
+
+### Q5 — high-rate propagation
+
+Please verify that `propagateTo(stamp_ns)` selects the retained anchor:
+
+```text
+t_k <= stamp_ns < t_{k+1}
+```
+
+and propagates forward from that anchor, rather than always starting from the latest anchor.
+
+Test dynamic motion, not only static IMU.
+
+---
+
+### Q6 — Pose3 noise / covariance
+
+Please verify the GTSAM Pose3 ordering:
+
+```text
+[rotation(3), translation(3)]
+```
+
+If the current implementation uses fixed Pose3 sigmas rather than SE(3) adjoint covariance propagation from source covariance, please classify whether this is acceptable for Phase 4B-1 or should be deferred to a later adapter phase.
+
+---
+
+### Q7 — future VIO extensibility
+
+Please assess whether the current Phase 4B-1 structures can later support VIO without changing signed 4B-1 semantics:
+
+```text
+multi-source constraint keys
+source epoch isolation
+source-specific interpolation
+adjacent factor insertion
+gate reference immutability
+telemetry needed for first-divergence debugging
+```
+
+Do not require VIO implementation in Phase 4B-1.
+
+---
+
+## 6. Reported tests
+
+The current R3 claim is:
+
+```text
+workspace tests: 56
+shadow fusion tests: 24
+errors: 0
+failures: 0
+skipped: 0
+```
+
+Please verify against:
+
+```text
+r3_build.log
+r3_test.log
+test_fusion_shadow raw output
+```
+
+Do not rely on the summary alone.
+
+---
+
+## 7. Known non-blocking risk
+
+The core unit-test backend still defaults `T_B_L` to identity for synthetic tests.
+
+For live LIO integration, unconfigured extrinsic and explicitly configured identity extrinsic must be distinguishable. This is a Phase 4B-2 live-adapter requirement, not a Phase 4B-1 core blocker if clearly documented.
+
+---
+
+## 8. Reproduction note
+
+If a project-provided Docker image is available:
 
 ```bash
-cd <your_workspace>/src
-git clone https://github.com/pyy52/SuperOdom.git -b ros2
-
-cd <your_workspace>
+source /opt/ros/humble/setup.bash
+source /root/ros2_ws/install/setup.bash
+export LD_LIBRARY_PATH=/usr/local/lib:${LD_LIBRARY_PATH}
 colcon build --packages-select super_odometry super_odometry_vio
 colcon test --packages-select super_odometry super_odometry_vio
 colcon test-result --all --verbose
+/root/ros2_ws/build/super_odometry_vio/test_fusion_shadow
 ```
 
-### 预期验证结果：
-* **工作空间全量测试**: **56 个测试用例，0 errors, 0 failures, 0 skipped (100% PASS)**
-* **专项影子融合测试 (`test_fusion_shadow`)**: **24 个专项用例，全部通过（耗时 < 50ms）**
+If `superodom-ros2:latest` is a local/internal image, please state that explicitly and provide Dockerfile or image-build instructions before claiming external one-click reproducibility.
 
 ---
 
-非常感谢各位专家的宝贵意见！如果您发现任何数学、并发、因果性或架构设计上的疑问，欢迎在 GitHub 上提交 Issue 或直接反馈给项目负责人。
+## 9. Requested review output
+
+Please return findings in this format:
+
+```text
+Finding
+Why it matters
+Evidence
+Signed rule affected
+Minimal correction
+Required local verification
+```
+
+Recommended status options:
+
+```text
+NO BLOCKER FOUND
+BLOCKER FOUND
+CONTRACT AMBIGUITY
+INFRA / REPRODUCIBILITY ISSUE
+```
+
+Please do not declare Phase PASS. The final phase gate remains with the Master Designer after independent review.
