@@ -245,16 +245,24 @@ public:
                              double trans_thresh, double rot_thresh,
                              const std::string& decision, const std::string& reason,
                              int64_t lateness_ns, int64_t watermark_ns,
-                             int64_t left_bracket_ns, int64_t right_bracket_ns)
+                             int64_t left_bracket_ns, int64_t right_bracket_ns,
+                             bool has_source = true)
     {
         std::ostringstream p;
         p.imbue(std::locale::classic());
-        p << "{\"dT_imu_ref\":" << poseToJson(dT_imu_ref)
-          << ",\"dT_source\":" << poseToJson(dT_source)
-          << ",\"innovation6\":" << tangent6ToJson(innovation6)
-          << ",\"trans_norm\":" << formatDouble(trans_norm)
-          << ",\"rot_norm\":" << formatDouble(rot_norm)
-          << ",\"thresholds\":[" << formatDouble(trans_thresh) << "," << formatDouble(rot_thresh) << "]"
+        p << "{\"dT_imu_ref\":" << poseToJson(dT_imu_ref);
+        if (has_source) {
+            p << ",\"dT_source\":" << poseToJson(dT_source)
+              << ",\"innovation6\":" << tangent6ToJson(innovation6)
+              << ",\"trans_norm\":" << formatDouble(trans_norm)
+              << ",\"rot_norm\":" << formatDouble(rot_norm);
+        } else {
+            p << ",\"dT_source\":null"
+              << ",\"innovation6\":null"
+              << ",\"trans_norm\":null"
+              << ",\"rot_norm\":null";
+        }
+        p << ",\"thresholds\":[" << formatDouble(trans_thresh) << "," << formatDouble(rot_thresh) << "]"
           << ",\"decision\":\"" << escapeJson(decision) << "\""
           << ",\"reason\":\"" << escapeJson(reason) << "\""
           << ",\"lateness_ns\":" << lateness_ns

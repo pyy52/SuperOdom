@@ -144,6 +144,10 @@ void ShadowTimeline::closeInterval(int k)
     if (anchor_status_[k] == AnchorStatus::INVALID_GAP)
     {
         anchor_status_[k + 1] = AnchorStatus::INVALID_GAP;
+        if (parity_tracer_) {
+            parity_tracer_->traceTimelineAnchor("TIMELINE_ANCHOR_CLOSE", anchor_stamps_[k + 1], k + 1, "IMU", 0,
+                                               anchor_stamps_[k + 1], "INVALID_GAP", "BROKEN", "CLOSED");
+        }
         return;
     }
 
@@ -164,6 +168,10 @@ void ShadowTimeline::closeInterval(int k)
             {
                 ++diag_.imu_dropped;
                 gap_detected = true;
+                if (parity_tracer_) {
+                    parity_tracer_->traceInputConsume(s.stamp_ns, k, "IMU", 0, "IMU", s.stamp_ns,
+                                                      "GAP_DETECTED", "imu_gap", false, dt_ns, true);
+                }
                 covered_until_ns = s.stamp_ns;
                 continue;
             }
@@ -179,6 +187,10 @@ void ShadowTimeline::closeInterval(int k)
                 {
                     ++diag_.imu_dropped;
                     gap_detected = true;
+                    if (parity_tracer_) {
+                        parity_tracer_->traceInputConsume(t_j, k, "IMU", 0, "IMU", t_j,
+                                                          "GAP_DETECTED", "imu_gap", false, dt_ns, true);
+                    }
                 }
                 else
                 {
@@ -197,13 +209,10 @@ void ShadowTimeline::closeInterval(int k)
     const std::string k_status = (anchor_status_[k] == AnchorStatus::SOLVED) ? "SOLVED" : "GRAPH_INSERTED";
     if (gap_detected || covered_until_ns != t_j)
     {
-        if (gap_detected)
-        {
-            anchor_status_[k + 1] = AnchorStatus::INVALID_GAP;
-            if (parity_tracer_) {
-                parity_tracer_->traceTimelineAnchor("TIMELINE_ANCHOR_CLOSE", anchor_stamps_[k], k, "IMU", 0,
-                                                   anchor_stamps_[k], k_status, "BROKEN", "CLOSED");
-            }
+        anchor_status_[k + 1] = AnchorStatus::INVALID_GAP;
+        if (parity_tracer_) {
+            parity_tracer_->traceTimelineAnchor("TIMELINE_ANCHOR_CLOSE", anchor_stamps_[k + 1], k + 1, "IMU", 0,
+                                               anchor_stamps_[k + 1], "INVALID_GAP", "BROKEN", "CLOSED");
         }
         return;
     }
@@ -554,7 +563,7 @@ void ShadowTimeline::tryInsertLioFactors()
                     t_j, k, "LIO", epoch_j, ref, gtsam::Pose3(), gtsam::Vector6::Zero(),
                     0.0, 0.0, config_.innovation_trans_m, config_.innovation_rot_rad,
                     "REJECTED", "CROSS_EPOCH", lateness_ns, watermark_ns_,
-                    left_b_i, right_b_j);
+                    left_b_i, right_b_j, /*has_source=*/false);
             }
             continue;
         }
@@ -568,7 +577,7 @@ void ShadowTimeline::tryInsertLioFactors()
                     t_j, k, "LIO", epoch_j, ref, gtsam::Pose3(), gtsam::Vector6::Zero(),
                     0.0, 0.0, config_.innovation_trans_m, config_.innovation_rot_rad,
                     "REJECTED", "NO_BRACKET", lateness_ns, watermark_ns_,
-                    left_b_i, right_b_j);
+                    left_b_i, right_b_j, /*has_source=*/false);
             }
             continue;
         }
