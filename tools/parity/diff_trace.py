@@ -270,6 +270,7 @@ def diff_traces(shadow_path: str, legacy_path: str, options: DiffOptions,
     matched_total = 0
     divergent_total = 0
     missing_total = 0
+    all_divergences_list: List[Dict[str, Any]] = []
 
     for layer in layer_order():
         entry: Dict[str, Any] = {
@@ -306,13 +307,68 @@ def diff_traces(shadow_path: str, legacy_path: str, options: DiffOptions,
                 entry["missing_in_legacy"] += 1
             if entry["first_divergence"] is None:
                 entry["first_divergence"] = divergences[0]
-            if first is None:
-                # Layer priority governs "first": the earliest layer in the
-                # prescribed comparison order that shows any divergence.
-                first = divergences[0]
+            all_divergences_list.extend(divergences)
             if all_divergences and len(collected) < max_divergences:
                 collected.extend(divergences[:max_divergences - len(collected)])
         per_layer.append(entry)
+
+    # Determine global first divergence:
+    # 1. Chronological interval order first: earliest k (or timestamp if k is None).
+    # 2. If multiple layers diverge at that interval, earliest causal layer in layer_order().
+    first: Optional[Dict[str, Any]] = None
+    first_chronological: Optional[Dict[str, Any]] = None
+    first_causal_layer_at_interval: Optional[str] = None
+    first_interval_divergences: List[Dict[str, Any]] = []
+
+    if all_divergences_list:
+        order = layer_order()
+
+        def div_timestamp(d: Dict[str, Any]) -> int:
+            t_s = d.get("shadow_record", {}).get("timestamp_ns") if d.get("shadow_record") else None
+            t_l = d.get("legacy_record", {}).get("timestamp_ns") if d.get("legacy_record") else None
+            valid_ts = [t for t in (t_s, t_l) if isinstance(t, int)]
+            return min(valid_ts) if valid_ts else 0
+
+        indexed_divs = list(enumerate(all_divergences_list))
+
+        # Group by interval k (or timestamp if k is None)
+        def interval_sort_key(d: Dict[str, Any]) -> Tuple[int, int, int]:
+            k_val = d.get("k")
+            ts = div_timestamp(d)
+            if isinstance(k_val, int):
+                return (0, k_val, ts)
+            return (1, 0, ts)
+
+        # Chronological order: by interval and timestamp
+        sorted_by_chrono = [
+            item[1] for item in sorted(
+                indexed_divs,
+                key=lambda item: (
+                    interval_sort_key(item[1]),
+                    item[0],
+                )
+            )
+        ]
+        first_chronological = sorted_by_chrono[0]
+
+        # Preserve discovery order of fields for same key/layer
+        sorted_by_interval = [
+            item[1] for item in sorted(
+                indexed_divs,
+                key=lambda item: (
+                    interval_sort_key(item[1]),
+                    order.index(item[1].get("layer", "")) if item[1].get("layer") in order else 99,
+                    item[0],
+                )
+            )
+        ]
+        first = sorted_by_interval[0]
+        earliest_k = first.get("k")
+        first_causal_layer_at_interval = first.get("layer")
+        first_interval_divergences = [
+            d for d in all_divergences_list
+            if d.get("k") == earliest_k
+        ]
 
     report: Dict[str, Any] = {
         "tool": "diff_trace.py",
@@ -335,6 +391,9 @@ def diff_traces(shadow_path: str, legacy_path: str, options: DiffOptions,
         "first_divergent_layer": None if first is None else first["layer"],
         "first_divergent_field": None if first is None else first["field"],
         "first_divergence": first,
+        "first_chronological_divergence": first_chronological,
+        "first_causal_layer_at_interval": first_causal_layer_at_interval,
+        "first_interval_divergences": first_interval_divergences,
         "per_layer": per_layer,
     }
     if all_divergences:
@@ -406,6 +465,13 @@ def print_text_report(report: Dict[str, Any]) -> None:
             print(f"  missing on : {first['missing_side']}")
         print("  shadow rec : " + json.dumps(first["shadow_record"]))
         print("  legacy rec : " + json.dumps(first["legacy_record"]))
+        if report.get("first_chronological_divergence") and report["first_chronological_divergence"] != first:
+            fc = report["first_chronological_divergence"]
+            print(f"  first chronological: layer={fc['layer']} k={fc['k']} field={fc['field']}")
+        other_divs = [d for d in report.get("first_interval_divergences", []) if d != first]
+        if other_divs:
+            other_layers = sorted(set(d["layer"] for d in other_divs))
+            print(f"  other divergences at k={first['k']}: layers={','.join(other_layers)} (count={len(other_divs)})")
     print()
     print("per-layer summary (comparison order = "
           "timeline,input,factor,gate,state,trajectory)")

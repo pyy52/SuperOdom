@@ -66,14 +66,59 @@ class FixtureDiffTest(unittest.TestCase):
         self.assertEqual(report["first_divergent_interval_k"], 0)
         self.assertEqual(report["first_divergent_field"], "payload.velocity[0]")
 
-    def test_layer_priority_beats_interval_order(self) -> None:
-        # legacy gate diverges at k=1, legacy timeline diverges at k=2
+    def test_chronological_interval_order_beats_layer_numbering(self) -> None:
+        # legacy gate diverges at k=1, legacy timeline diverges at k=2.
+        # Chronological interval order (k=1 before k=2) must govern first divergence.
         report = run_diff(*self.pair("timeline_divergence"))
-        self.assertEqual(report["first_divergent_layer"], "timeline")
-        self.assertEqual(report["first_divergent_interval_k"], 2)
+        self.assertEqual(report["first_divergent_layer"], "gate")
+        self.assertEqual(report["first_divergent_interval_k"], 1)
+        self.assertEqual(report["first_causal_layer_at_interval"], "gate")
+        self.assertEqual(report["first_chronological_divergence"]["layer"], "gate")
+        self.assertEqual(report["first_chronological_divergence"]["k"], 1)
+
+        # Per-layer divergence is preserved independently:
         gate_entry = next(entry for entry in report["per_layer"]
                           if entry["layer"] == "gate")
         self.assertEqual(gate_entry["divergent"], 1)
+        self.assertEqual(gate_entry["first_divergence"]["k"], 1)
+
+        timeline_entry = next(entry for entry in report["per_layer"]
+                              if entry["layer"] == "timeline")
+        self.assertEqual(timeline_entry["divergent"], 1)
+        self.assertEqual(timeline_entry["first_divergence"]["k"], 2)
+
+    def test_causal_layer_order_at_same_interval(self) -> None:
+        # At interval k=1, both factor and gate diverge.
+        # Factor (causal layer 2) must be selected over Gate (causal layer 3) as the causal root.
+        shadow = [
+            utils.record("shadow", "FACTOR_INSERT", 1100000000, 1, "LIO", 0,
+                         {"factor_type": "BetweenFactorPose3", "keys": ["X_1", "X_2"],
+                          "measurement_se3": [0, 0, 0, 0, 0, 0, 1],
+                          "noise_sigmas": [1e-3]*6, "committed": True, "finalized": True}),
+            utils.record("shadow", "GATE_EVALUATION", 1100000000, 1, "LIO", 0,
+                         {"dT_imu_ref": [0, 0, 0, 0, 0, 0, 1], "dT_source": [0, 0, 0, 0, 0, 0, 1],
+                          "innovation6": [0]*6, "trans_norm": 0.0, "rot_norm": 0.0,
+                          "decision": "ACCEPTED", "reason": "SUCCESS"}),
+        ]
+        legacy = [
+            utils.record("legacy", "FACTOR_INSERT", 1100000000, 1, "LIO", 0,
+                         {"factor_type": "BetweenFactorPose3", "keys": ["X_1", "X_2"],
+                          "measurement_se3": [0.1, 0, 0, 0, 0, 0, 1],  # diverges
+                          "noise_sigmas": [1e-3]*6, "committed": True, "finalized": True}),
+            utils.record("legacy", "GATE_EVALUATION", 1100000000, 1, "LIO", 0,
+                         {"dT_imu_ref": [0, 0, 0, 0, 0, 0, 1], "dT_source": [0, 0, 0, 0, 0, 0, 1],
+                          "innovation6": [0]*6, "trans_norm": 0.5,  # diverges
+                          "decision": "REJECTED", "reason": "INNOVATION_TOO_LARGE_TRANS"}),
+        ]
+        report = run_diff(utils.write_jsonl(shadow), utils.write_jsonl(legacy))
+        self.assertTrue(report["divergence"])
+        self.assertEqual(report["first_divergent_interval_k"], 1)
+        self.assertEqual(report["first_divergent_layer"], "factor")
+        self.assertEqual(report["first_causal_layer_at_interval"], "factor")
+        # Both factor and gate appear in interval divergences
+        interval_layers = [d["layer"] for d in report["first_interval_divergences"]]
+        self.assertIn("factor", interval_layers)
+        self.assertIn("gate", interval_layers)
 
     def test_layer_names_and_field_aliases_are_interoperable(self) -> None:
         report = run_diff(*self.pair("layer_names"))

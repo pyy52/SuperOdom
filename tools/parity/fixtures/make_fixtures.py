@@ -14,8 +14,8 @@ for the single divergence it is meant to demonstrate, so the expected
 * ``factor_divergence_*``   -> first divergence in layer ``factor``
 * ``gate_divergence_*``     -> first divergence in layer ``gate``
 * ``state_divergence_*``    -> first divergence in layer ``state``
-* ``timeline_divergence_*`` -> gate diverges at k=1, timeline at k=2; the
-  prescribed layer order (timeline before gate) must still report timeline
+* ``timeline_divergence_*`` -> gate diverges at k=1, timeline at k=2;
+  chronological interval order (k=1 before k=2) reports gate at k=1
 * ``layer_names_*``         -> taskbook layer-level types with canonical field
   spellings on the legacy side and emitted spellings on the shadow side
 

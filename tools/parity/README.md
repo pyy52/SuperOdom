@@ -220,7 +220,7 @@ Exit codes: `0` summarized, `2` usage / unreadable input.
 | `factor_divergence_*` | first divergence in layer `factor`, field `payload.measurement_se3[0]` |
 | `gate_divergence_*` | first divergence in layer `gate`, field `payload.trans_norm` |
 | `state_divergence_*` | first divergence in layer `state`, field `payload.velocity[0]` |
-| `timeline_divergence_*` | gate diverges at `k=1`, timeline at `k=2` → layer order reports timeline |
+| `timeline_divergence_*` | gate diverges at `k=1`, timeline at `k=2` → chronological interval order reports gate at `k=1` (timeline divergence at `k=2` retained in per-layer) |
 | `layer_names_*` | taskbook layer names + canonical spellings vs emitted names → parity |
 
 Regenerate deterministically with `python3 tools/parity/fixtures/make_fixtures.py`.
