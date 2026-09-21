@@ -95,6 +95,49 @@ TEST(AnchorGap, PropagateToGapReturnsInvalid) {
 }
 
 // 6. PermutationWithinReorderHorizonCommitsSameMeasurement
+
+TEST(AnchorGap, GapBreaksFusionSegmentUntilExplicitReset) {
+    ShadowTimeline tl(imuParams(), baseConfig());
+    const int64_t t0 = 1000000000ll;
+    
+    // 1. feed continuous IMU to create several SOLVED anchors
+    int64_t t = t0;
+    for (int i = 0; i < 70; ++i) { // 350ms total
+        tl.feedImu(t, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
+        t += 5000000ll;
+    }
+    
+    bool valid = false;
+    AnchorState pre_gap_latest = tl.latestAnchor(&valid);
+    EXPECT_TRUE(valid);
+    int pre_gap_k = pre_gap_latest.k;
+
+    // 2. introduce dt > max_imu_dt_ns
+    int64_t gap_t = t + 100000000ll; // dt = 100ms > max_imu_dt_ns (50ms)
+
+    // 3. feed >= 2 seconds of later continuous IMU
+    int64_t t_post = gap_t;
+    for (int i = 0; i < 420; ++i) { // 2100ms total
+        tl.feedImu(t_post, gtsam::Vector3(0,0,9.81), gtsam::Vector3::Zero());
+        t_post += 5000000ll;
+    }
+
+    // 4 & 5. assert latestAnchor does not advance past the last pre-gap solved anchor
+    bool valid2 = false;
+    AnchorState post_gap_latest = tl.latestAnchor(&valid2);
+    EXPECT_TRUE(valid2);
+    EXPECT_EQ(post_gap_latest.k, pre_gap_k);
+
+    // 6. assert anchorState(post-gap) returns false
+    bool state_valid = false;
+    tl.anchorState(pre_gap_k + 5, &state_valid);
+    EXPECT_FALSE(state_valid);
+
+    // 7. assert propagateTo(post-gap query).valid == false
+    auto out = tl.propagateTo(gap_t + 1000000000ll);
+    EXPECT_FALSE(out.valid);
+}
+
 TEST(SourceFinalization, PermutationWithinReorderHorizonCommitsSameMeasurement) {
     ShadowConfig cfgA = baseConfig(); cfgA.source_reorder_horizon_ns = 300000000ll; ShadowTimeline tlA(imuParams(), cfgA);
     ShadowConfig cfgB = baseConfig(); cfgB.source_reorder_horizon_ns = 300000000ll; ShadowTimeline tlB(imuParams(), cfgB);
