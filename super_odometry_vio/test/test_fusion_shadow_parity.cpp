@@ -171,7 +171,7 @@ TEST(ShadowParity, F3_LifecycleAndTerminalStates) {
         if (line.find("\"action\":\"DROPPED_WATERMARK\"") != std::string::npos) {
             found_dropped_watermark = true;
         }
-        if (line.find("\"action\":\"DROPPED_STALE\"") != std::string::npos) {
+        if (line.find("\"drop_reason\":\"stale_skipped\"") != std::string::npos) {
             found_dropped_stale = true;
         }
         if (line.find("\"reason\":\"INNOVATION_TOO_LARGE_TRANS\"") != std::string::npos) {
@@ -268,5 +268,17 @@ TEST(ShadowParity, F5_DeterministicReplay) {
     std::remove(trace1.c_str());
     std::remove(trace2.c_str());
 }
+
+TEST(ShadowParity, F6_EvidenceTrace) {
+    const std::string trace_path = "/tmp/synthetic_shadow_trace.jsonl";
+    std::remove(trace_path.c_str());
+
+    ShadowTimeline tl(imuParams(), baseConfig(trace_path));
+    runSyntheticScenario(tl);
+
+    std::ifstream in(trace_path);
+    ASSERT_TRUE(in.is_open());
+}
+
 
 }  // namespace

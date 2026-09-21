@@ -209,9 +209,13 @@ public:
         std::ostringstream p;
         p << "{\"sensor_type\":\"" << escapeJson(sensor_type) << "\""
           << ",\"sample_time_ns\":" << sample_time_ns
-          << ",\"action\":\"" << escapeJson(action) << "\""
-          << ",\"drop_reason\":\"" << escapeJson(drop_reason) << "\""
-          << ",\"epoch_changed\":" << (epoch_changed ? "true" : "false")
+          << ",\"action\":\"" << escapeJson(action) << "\"";
+        if (drop_reason.empty() || drop_reason == "none") {
+            p << ",\"drop_reason\":null";
+        } else {
+            p << ",\"drop_reason\":\"" << escapeJson(drop_reason) << "\"";
+        }
+        p << ",\"epoch_changed\":" << (epoch_changed ? "true" : "false")
           << ",\"lateness_ns\":" << lateness_ns
           << ",\"coverage_gap\":" << (coverage_gap ? "true" : "false") << "}";
         writeRaw("INPUT_CONSUME", timestamp_ns, k, source, epoch, p.str());

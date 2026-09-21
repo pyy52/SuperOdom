@@ -58,14 +58,14 @@ void ShadowTimeline::feedImu(int64_t stamp_ns, const gtsam::Vector3& acc,
         ++diag_.imu_dropped;
         if (parity_tracer_) {
             parity_tracer_->traceInputConsume(stamp_ns, -1, "IMU", 0, "IMU", stamp_ns,
-                                              "DROPPED_OUT_OF_ORDER", "out_of_order", false);
+                                              "DROPPED_LATE", "too_late", false);
         }
         return;
     }
     imu_buf_.push_back({stamp_ns, acc, gyro});
     if (parity_tracer_) {
         parity_tracer_->traceInputConsume(stamp_ns, -1, "IMU", 0, "IMU", stamp_ns,
-                                          "ACCEPTED", "none", false);
+                                          "ACCEPTED", "", false);
     }
 
     if (!imu_initialized_)
@@ -194,6 +194,7 @@ void ShadowTimeline::closeInterval(int k)
             break;
         }
     }
+    const std::string k_status = (anchor_status_[k] == AnchorStatus::SOLVED) ? "SOLVED" : "GRAPH_INSERTED";
     if (gap_detected || covered_until_ns != t_j)
     {
         if (gap_detected)
@@ -201,7 +202,7 @@ void ShadowTimeline::closeInterval(int k)
             anchor_status_[k + 1] = AnchorStatus::INVALID_GAP;
             if (parity_tracer_) {
                 parity_tracer_->traceTimelineAnchor("TIMELINE_ANCHOR_CLOSE", anchor_stamps_[k], k, "IMU", 0,
-                                                   anchor_stamps_[k], "INVALID_GAP", "BROKEN", "CLOSED");
+                                                   anchor_stamps_[k], k_status, "BROKEN", "CLOSED");
             }
         }
         return;
@@ -209,7 +210,7 @@ void ShadowTimeline::closeInterval(int k)
     ++diag_.intervals_closed;
     if (parity_tracer_) {
         parity_tracer_->traceTimelineAnchor("TIMELINE_ANCHOR_CLOSE", anchor_stamps_[k], k, "IMU", 0,
-                                           anchor_stamps_[k], "GRAPH_INSERTED", "ACTIVE", "CLOSED");
+                                           anchor_stamps_[k], k_status, "ACTIVE", "CLOSED");
     }
 
     // Initial values for the new anchor by IMU prediction.
@@ -301,7 +302,7 @@ void ShadowTimeline::feedLioPose(int64_t stamp_ns, const Sophus::SE3d& T_W_L,
         ++diag_.lio_stale_skipped;
         if (parity_tracer_) {
             parity_tracer_->traceInputConsume(stamp_ns, -1, "LIO", lio_epoch, "LIO", stamp_ns,
-                                              "DROPPED_STALE", "stale_skipped", false);
+                                              "DROPPED_LATE", "stale_skipped", false);
         }
         return;
     }
@@ -313,7 +314,7 @@ void ShadowTimeline::feedLioPose(int64_t stamp_ns, const Sophus::SE3d& T_W_L,
     lio_buf_.push_back({stamp_ns, lio_epoch, T_W_L});
     if (parity_tracer_) {
         parity_tracer_->traceInputConsume(stamp_ns, -1, "LIO", lio_epoch, "LIO", stamp_ns,
-                                          "BUFFERED", "none", epoch_changed);
+                                          "ACCEPTED", "", epoch_changed);
     }
     while (lio_buf_.size() > 200) lio_buf_.pop_front();
     tryInsertLioFactors();
