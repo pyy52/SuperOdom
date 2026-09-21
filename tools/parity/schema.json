@@ -1,0 +1,200 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SuperOdom Phase 4B-2 parity trace record (observation artifact, not production state)",
+  "schema_version": 1,
+  "notes": [
+    "Every JSONL line is one immutable observation. The tools in tools/parity/ read this",
+    "file as the single source of truth for vocabulary; the Python modules fall back to",
+    "embedded copies of these constants when this file is missing.",
+    "This artifact must never be consumed by the optimizer, callback path or factor graph."
+  ],
+  "record_required_fields": [
+    "schema_version",
+    "producer",
+    "type",
+    "timestamp_ns",
+    "k",
+    "source",
+    "epoch",
+    "payload"
+  ],
+  "lenient_metadata_fields": {
+    "producer": "validated when present; otherwise taken from --producer CLI flag (warning, not error, unless --strict)",
+    "schema_version": "validated when present; otherwise assumed 1 (warning, not error, unless --strict)"
+  },
+  "producers": ["shadow", "legacy"],
+  "sources": {
+    "canonical": ["imu", "lio", "central"],
+    "accepted_case_insensitive": ["IMU", "LIO", "SYSTEM", "CENTRAL", "VIO"]
+  },
+  "layer_order": ["timeline", "input", "factor", "gate", "state", "trajectory"],
+  "types": {
+    "timeline": [
+      "TIMELINE_ANCHOR_OPEN",
+      "TIMELINE_ANCHOR_CLOSE",
+      "TIMELINE_INTERVAL_CLOSE",
+      "TIMELINE_INTERVAL_STATUS",
+      "FUSION_SEGMENT_RESET",
+      "timeline"
+    ],
+    "input": [
+      "INPUT_CONSUME",
+      "INPUT_SAMPLE",
+      "INPUT_DROP",
+      "input"
+    ],
+    "factor": [
+      "FACTOR_INSERT",
+      "FACTOR_FINALIZE",
+      "factor"
+    ],
+    "gate": [
+      "GATE_EVALUATION",
+      "GATE_DECISION",
+      "gate"
+    ],
+    "state": [
+      "STATE_SNAPSHOT",
+      "STATE_UPDATE",
+      "state"
+    ],
+    "trajectory": [
+      "TRAJECTORY_POSE",
+      "TRAJECTORY_STATE",
+      "trajectory"
+    ]
+  },
+  "payload_fields": {
+    "timeline": {
+      "t_k": ["t_k", "anchor_stamp_ns", "interval_stamp_ns"],
+      "anchor_status": ["anchor_status"],
+      "interval_status": ["interval_status"],
+      "fusion_segment": ["fusion_segment", "fusion_segment_status"]
+    },
+    "input": {
+      "sensor_type": ["sensor_type"],
+      "sample_time_ns": ["sample_time_ns", "imu_stamp_ns", "lio_stamp_ns"],
+      "action": ["action"],
+      "drop_reason": ["drop_reason", "reason"],
+      "coverage_gap": ["coverage_gap"],
+      "epoch_changed": ["epoch_changed"],
+      "lateness_ns": ["lateness_ns"]
+    },
+    "factor": {
+      "factor_type": ["factor_type"],
+      "key_i": ["key_i"],
+      "key_j": ["key_j"],
+      "keys": ["keys"],
+      "measurement_se3": ["measurement_se3", "measurement_T_Bi_Bj", "measurement"],
+      "noise_sigmas": ["noise_sigmas", "noise_diag", "sigmas", "sigma6"],
+      "committed": ["committed"],
+      "finalized": ["finalized"],
+      "status": ["status"],
+      "insertion_time_ns": ["insertion_time_ns"]
+    },
+    "gate": {
+      "dT_imu_ref": ["dT_imu_ref"],
+      "dT_source": ["dT_source"],
+      "innovation6": ["innovation6", "innovation_6d", "innovation_6"],
+      "trans_norm": ["trans_norm", "translation_norm"],
+      "rot_norm": ["rot_norm", "rotation_norm"],
+      "thresholds": ["thresholds"],
+      "decision": ["decision"],
+      "reason": ["reason"],
+      "lateness_ns": ["lateness_ns"],
+      "watermark_ns": ["watermark_ns"],
+      "left_bracket_ns": ["left_bracket_ns"],
+      "right_bracket_ns": ["right_bracket_ns"],
+      "interpolation_brackets": ["interpolation_brackets"]
+    },
+    "state": {
+      "pose": ["pose", "T_W_B"],
+      "velocity": ["velocity", "v_W"],
+      "bias_acc": ["bias_acc"],
+      "bias_gyro": ["bias_gyro"],
+      "anchor_status": ["anchor_status"]
+    },
+    "trajectory": {
+      "pose": ["pose", "T_W_B"],
+      "output_stamp_ns": ["output_stamp_ns", "stamp_ns"]
+    }
+  },
+  "se3_vector_order": {
+    "q_xyzw": "quaternion order is x,y,z,w",
+    "t_xyz": "translation unit is meter",
+    "rotation_unit": "radian (innovation / gate norms / noise sigmas)",
+    "pose_vector_7": "[tx, ty, tz, qx, qy, qz, qw] for measurement_se3 / state.pose / trajectory.pose",
+    "gtsam_tangent_6": "[rotation(3), translation(3)] for noise_sigmas and innovation6 (R4.2 signed order)"
+  },
+  "reject_reasons": {
+    "spec_seven": [
+      "NO_BRACKET",
+      "CROSS_EPOCH",
+      "TOO_LATE",
+      "GATE_REJECT",
+      "SLOT_OCCUPIED",
+      "DUPLICATE_IDENTITY",
+      "IMU_GAP"
+    ],
+    "shadow_accept_decision": [
+      "ACCEPTED",
+      "REJECT_TOO_LATE",
+      "REJECT_DUPLICATE",
+      "REJECT_NO_REF",
+      "REJECT_NO_BRACKET",
+      "REJECT_INNOVATION_TRANS",
+      "REJECT_INNOVATION_ROT",
+      "REJECT_SLOT_OCCUPIED",
+      "REJECT_CROSS_EPOCH"
+    ],
+    "shadow_gate_reason": [
+      "SUCCESS",
+      "TOO_LATE",
+      "INNOVATION_TOO_LARGE",
+      "INNOVATION_TOO_LARGE_TRANS",
+      "INNOVATION_TOO_LARGE_ROT"
+    ],
+    "input_action": [
+      "ACCEPTED",
+      "DROPPED_WATERMARK",
+      "DROPPED_LATE",
+      "GAP_DETECTED"
+    ],
+    "factor_status": [
+      "COMMITTED",
+      "FINALIZED"
+    ],
+    "input_drop_reason": [
+      "late_after_watermark",
+      "stale_skipped",
+      "coverage_gap",
+      "imu_gap",
+      "duplicate_identity",
+      "slot_occupied",
+      "cross_epoch",
+      "no_bracket",
+      "too_late"
+    ]
+  },
+  "anchor_status_order": ["SCHEDULED", "GRAPH_INSERTED", "SOLVED"],
+  "anchor_status_terminal": ["SOLVED", "INVALID_GAP", "INVALID"],
+  "tolerances_default": {
+    "trans": 1e-6,
+    "rot": 1e-6,
+    "vel": 1e-6,
+    "bias": 1e-8,
+    "rel": 0.0,
+    "units": {
+      "trans": "meter",
+      "rot": "radian",
+      "vel": "meter/second",
+      "bias": "raw accel/gyro bias units"
+    }
+  },
+  "forbidden_in_trace": [
+    "full ROS message dumps",
+    "point cloud payloads",
+    "unselected large covariance matrices",
+    "automatic time shift / SE(3) trajectory alignment / scale correction / nearest-neighbor rematching"
+  ]
+}
