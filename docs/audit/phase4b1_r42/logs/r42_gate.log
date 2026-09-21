@@ -1,0 +1,5 @@
+==============FAST-LIO ROS2 Docker Env Ready================
+Building SuperOdom...
+Starting >>> super_odometry_msgs
+Finished <<< super_odometry_msgs [11.8s]
+Starting >>> super_odometry_vio
