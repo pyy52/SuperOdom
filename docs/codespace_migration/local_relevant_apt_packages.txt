@@ -1,0 +1,350 @@
+ii  clang                                         1:10.0-50~exp1                          amd64        C, C++ and Objective-C compiler (LLVM based)
+ii  clang-10                                      1:10.0.0-4ubuntu1                       amd64        C, C++ and Objective-C compiler
+ii  clang-9                                       1:9.0.1-12                              amd64        C, C++ and Objective-C compiler
+ii  clang-tidy                                    1:10.0-50~exp1                          amd64        clang-based C++ linter tool
+ii  clang-tidy-10                                 1:10.0.0-4ubuntu1                       amd64        clang-based C++ linter tool
+ii  clang-tools-10                                1:10.0.0-4ubuntu1                       amd64        clang-based tools for C/C++ developments
+ii  cmake                                         3.16.3-1ubuntu1.20.04.1                 amd64        cross-platform, open-source make system
+ii  cmake-data                                    3.16.3-1ubuntu1.20.04.1                 all          CMake data files (modules, templates and documentation)
+ii  extra-cmake-modules                           5.68.0-0ubuntu1                         amd64        Extra modules and scripts for CMake
+ii  fonts-khmeros-core                            5.0-7ubuntu1                            all          KhmerOS Unicode fonts for the Khmer language of Cambodia
+ii  g++                                           4:9.3.0-1ubuntu2                        amd64        GNU C++ compiler
+ii  g++-8                                         8.4.0-3ubuntu2                          amd64        GNU C++ compiler
+ii  g++-9                                         9.4.0-1ubuntu1~20.04.2                  amd64        GNU C++ compiler
+ii  g++-9-multilib                                9.4.0-1ubuntu1~20.04.2                  amd64        GNU C++ compiler (multilib support)
+ii  g++-multilib                                  4:9.3.0-1ubuntu2                        amd64        GNU C++ compiler (multilib files)
+ii  gcc                                           4:9.3.0-1ubuntu2                        amd64        GNU C compiler
+ii  gcc-10-base:amd64                             10.5.0-1ubuntu1~20.04                   amd64        GCC, the GNU Compiler Collection (base package)
+ii  gcc-10-base:i386                              10.5.0-1ubuntu1~20.04                   i386         GCC, the GNU Compiler Collection (base package)
+ii  gcc-11-base:amd64                             11.4.0-2ubuntu1~20.04                   amd64        GCC, the GNU Compiler Collection (base package)
+ii  gcc-13-base:amd64                             13.1.0-8ubuntu1~20.04.2                 amd64        GCC, the GNU Compiler Collection (base package)
+ii  gcc-13-base:i386                              13.1.0-8ubuntu1~20.04.2                 i386         GCC, the GNU Compiler Collection (base package)
+ii  gcc-7-base:amd64                              7.5.0-6ubuntu2                          amd64        GCC, the GNU Compiler Collection (base package)
+ii  gcc-8                                         8.4.0-3ubuntu2                          amd64        GNU C compiler
+ii  gcc-8-base:amd64                              8.4.0-3ubuntu2                          amd64        GCC, the GNU Compiler Collection (base package)
+ii  gcc-9                                         9.4.0-1ubuntu1~20.04.2                  amd64        GNU C compiler
+ii  gcc-9-base:amd64                              9.4.0-1ubuntu1~20.04.2                  amd64        GCC, the GNU Compiler Collection (base package)
+ii  gcc-9-multilib                                9.4.0-1ubuntu1~20.04.2                  amd64        GNU C compiler (multilib support)
+ii  gcc-multilib                                  4:9.3.0-1ubuntu2                        amd64        GNU C compiler (multilib files)
+ii  lib32gcc-9-dev                                9.4.0-1ubuntu1~20.04.2                  amd64        GCC support library (32 bit development files)
+ii  lib32gcc-s1                                   13.1.0-8ubuntu1~20.04.2                 amd64        GCC support library (32 bit Version)
+ii  lib32gomp1                                    13.1.0-8ubuntu1~20.04.2                 amd64        GCC OpenMP (GOMP) support library (32bit)
+ii  lib32quadmath0                                13.1.0-8ubuntu1~20.04.2                 amd64        GCC Quad-Precision Math Library (32bit)
+ii  libarpack2:amd64                              3.7.0-3                                 amd64        Fortran77 subroutines to solve large scale eigenvalue problems
+ii  libarpack2-dev:amd64                          3.7.0-3                                 amd64        Fortran77 subroutines to solve large scale eigenvalue problems (development)
+ii  libboost-all-dev                              1.71.0.0ubuntu2                         amd64        Boost C++ Libraries development files (ALL) (default version)
+ii  libboost-atomic-dev:amd64                     1.71.0.0ubuntu2                         amd64        atomic data types, operations, and memory ordering constraints (default version)
+ii  libboost-atomic1.71-dev:amd64                 1.71.0-6ubuntu6                         amd64        atomic data types, operations, and memory ordering constraints
+ii  libboost-atomic1.71.0:amd64                   1.71.0-6ubuntu6                         amd64        atomic data types, operations, and memory ordering constraints
+ii  libboost-chrono-dev:amd64                     1.71.0.0ubuntu2                         amd64        C++ representation of time duration, time point, and clocks (default version)
+ii  libboost-chrono1.71-dev:amd64                 1.71.0-6ubuntu6                         amd64        C++ representation of time duration, time point, and clocks
+ii  libboost-chrono1.71.0:amd64                   1.71.0-6ubuntu6                         amd64        C++ representation of time duration, time point, and clocks
+ii  libboost-container-dev:amd64                  1.71.0.0ubuntu2                         amd64        C++ library that implements several well-known containers - dev files (default version)
+ii  libboost-container1.71-dev:amd64              1.71.0-6ubuntu6                         amd64        C++ library that implements several well-known containers - dev files
+ii  libboost-container1.71.0:amd64                1.71.0-6ubuntu6                         amd64        C++ library that implements several well-known containers
+ii  libboost-context-dev:amd64                    1.71.0.0ubuntu2                         amd64        provides a sort of cooperative multitasking on a single thread (default version)
+ii  libboost-context1.71-dev:amd64                1.71.0-6ubuntu6                         amd64        provides a sort of cooperative multitasking on a single thread
+ii  libboost-context1.71.0:amd64                  1.71.0-6ubuntu6                         amd64        provides a sort of cooperative multitasking on a single thread
+ii  libboost-coroutine-dev:amd64                  1.71.0.0ubuntu2                         amd64        provides a sort of cooperative multitasking on a single thread (default version)
+ii  libboost-coroutine1.71-dev:amd64              1.71.0-6ubuntu6                         amd64        provides a sort of cooperative multitasking on a single thread
+ii  libboost-coroutine1.71.0:amd64                1.71.0-6ubuntu6                         amd64        provides a sort of cooperative multitasking on a single thread
+ii  libboost-date-time-dev:amd64                  1.71.0.0ubuntu2                         amd64        set of date-time libraries based on generic programming concepts (default version)
+ii  libboost-date-time1.71-dev:amd64              1.71.0-6ubuntu6                         amd64        set of date-time libraries based on generic programming concepts
+ii  libboost-date-time1.71.0:amd64                1.71.0-6ubuntu6                         amd64        set of date-time libraries based on generic programming concepts
+ii  libboost-dev:amd64                            1.71.0.0ubuntu2                         amd64        Boost C++ Libraries development files (default version)
+ii  libboost-exception-dev:amd64                  1.71.0.0ubuntu2                         amd64        library to help write exceptions and handlers (default version)
+ii  libboost-exception1.71-dev:amd64              1.71.0-6ubuntu6                         amd64        library to help write exceptions and handlers
+ii  libboost-fiber-dev:amd64                      1.71.0.0ubuntu2                         amd64        cooperatively-scheduled micro-/userland-threads (default version)
+ii  libboost-fiber1.71-dev:amd64                  1.71.0-6ubuntu6                         amd64        cooperatively-scheduled micro-/userland-threads
+ii  libboost-fiber1.71.0:amd64                    1.71.0-6ubuntu6                         amd64        cooperatively-scheduled micro-/userland-threads
+ii  libboost-filesystem-dev:amd64                 1.71.0.0ubuntu2                         amd64        filesystem operations (portable paths, iteration over directories, etc) in C++ (default version)
+ii  libboost-filesystem1.71-dev:amd64             1.71.0-6ubuntu6                         amd64        filesystem operations (portable paths, iteration over directories, etc) in C++
+ii  libboost-filesystem1.71.0:amd64               1.71.0-6ubuntu6                         amd64        filesystem operations (portable paths, iteration over directories, etc) in C++
+ii  libboost-graph-dev:amd64                      1.71.0.0ubuntu2                         amd64        generic graph components and algorithms in C++ (default version)
+ii  libboost-graph-parallel-dev                   1.71.0.0ubuntu2                         amd64        generic graph components and algorithms in C++ (default version)
+ii  libboost-graph-parallel1.71-dev               1.71.0-6ubuntu6                         amd64        generic graph components and algorithms in C++
+ii  libboost-graph-parallel1.71.0                 1.71.0-6ubuntu6                         amd64        generic graph components and algorithms in C++
+ii  libboost-graph1.71-dev:amd64                  1.71.0-6ubuntu6                         amd64        generic graph components and algorithms in C++
+ii  libboost-graph1.71.0:amd64                    1.71.0-6ubuntu6                         amd64        generic graph components and algorithms in C++
+ii  libboost-iostreams-dev:amd64                  1.71.0.0ubuntu2                         amd64        Boost.Iostreams Library development files (default version)
+ii  libboost-iostreams1.71-dev:amd64              1.71.0-6ubuntu6                         amd64        Boost.Iostreams Library development files
+ii  libboost-iostreams1.71.0:amd64                1.71.0-6ubuntu6                         amd64        Boost.Iostreams Library
+ii  libboost-locale-dev:amd64                     1.71.0.0ubuntu2                         amd64        C++ facilities for localization (default version)
+ii  libboost-locale1.71-dev:amd64                 1.71.0-6ubuntu6                         amd64        C++ facilities for localization
+ii  libboost-locale1.71.0:amd64                   1.71.0-6ubuntu6                         amd64        C++ facilities for localization
+ii  libboost-log-dev                              1.71.0.0ubuntu2                         amd64        C++ logging library (default version)
+ii  libboost-log1.71-dev                          1.71.0-6ubuntu6                         amd64        C++ logging library
+ii  libboost-log1.71.0                            1.71.0-6ubuntu6                         amd64        C++ logging library
+ii  libboost-math-dev:amd64                       1.71.0.0ubuntu2                         amd64        Boost.Math Library development files (default version)
+ii  libboost-math1.71-dev:amd64                   1.71.0-6ubuntu6                         amd64        Boost.Math Library development files
+ii  libboost-math1.71.0:amd64                     1.71.0-6ubuntu6                         amd64        Boost.Math Library
+ii  libboost-mpi-dev                              1.71.0.0ubuntu2                         amd64        C++ interface to the Message Passing Interface (MPI) (default version)
+ii  libboost-mpi-python-dev                       1.71.0.0ubuntu2                         amd64        C++ interface to the Message Passing Interface (MPI), Python Bindings (default version)
+ii  libboost-mpi-python1.71-dev                   1.71.0-6ubuntu6                         amd64        C++ interface to the Message Passing Interface (MPI), Python Bindings
+ii  libboost-mpi-python1.71.0                     1.71.0-6ubuntu6                         amd64        C++ interface to the Message Passing Interface (MPI), Python Bindings
+ii  libboost-mpi1.71-dev                          1.71.0-6ubuntu6                         amd64        C++ interface to the Message Passing Interface (MPI)
+ii  libboost-mpi1.71.0                            1.71.0-6ubuntu6                         amd64        C++ interface to the Message Passing Interface (MPI)
+ii  libboost-numpy-dev                            1.71.0.0ubuntu2                         amd64        Boost.Python NumPy extensions development files (default version)
+ii  libboost-numpy1.71-dev                        1.71.0-6ubuntu6                         amd64        Boost.Python NumPy extensions development files
+ii  libboost-numpy1.71.0                          1.71.0-6ubuntu6                         amd64        Boost.Python NumPy extensions
+ii  libboost-program-options-dev:amd64            1.71.0.0ubuntu2                         amd64        program options library for C++ (default version)
+ii  libboost-program-options1.71-dev:amd64        1.71.0-6ubuntu6                         amd64        program options library for C++
+ii  libboost-program-options1.71.0:amd64          1.71.0-6ubuntu6                         amd64        program options library for C++
+ii  libboost-python-dev                           1.71.0.0ubuntu2                         amd64        Boost.Python Library development files (default version)
+ii  libboost-python1.71-dev                       1.71.0-6ubuntu6                         amd64        Boost.Python Library development files
+ii  libboost-python1.71.0                         1.71.0-6ubuntu6                         amd64        Boost.Python Library
+ii  libboost-random-dev:amd64                     1.71.0.0ubuntu2                         amd64        Boost Random Number Library (default version)
+ii  libboost-random1.71-dev:amd64                 1.71.0-6ubuntu6                         amd64        Boost Random Number Library
+ii  libboost-random1.71.0:amd64                   1.71.0-6ubuntu6                         amd64        Boost Random Number Library
+ii  libboost-regex-dev:amd64                      1.71.0.0ubuntu2                         amd64        regular expression library for C++ (default version)
+ii  libboost-regex1.71-dev:amd64                  1.71.0-6ubuntu6                         amd64        regular expression library for C++
+ii  libboost-regex1.71.0:amd64                    1.71.0-6ubuntu6                         amd64        regular expression library for C++
+ii  libboost-serialization-dev:amd64              1.71.0.0ubuntu2                         amd64        serialization library for C++ (default version)
+ii  libboost-serialization1.71-dev:amd64          1.71.0-6ubuntu6                         amd64        serialization library for C++
+ii  libboost-serialization1.71.0:amd64            1.71.0-6ubuntu6                         amd64        serialization library for C++
+ii  libboost-stacktrace-dev:amd64                 1.71.0.0ubuntu2                         amd64        library to capture and print stack traces - development files (default version)
+ii  libboost-stacktrace1.71-dev:amd64             1.71.0-6ubuntu6                         amd64        library to capture and print stack traces - development files
+ii  libboost-stacktrace1.71.0:amd64               1.71.0-6ubuntu6                         amd64        library to capture and print stack traces
+ii  libboost-system-dev:amd64                     1.71.0.0ubuntu2                         amd64        Operating system (e.g. diagnostics support) library (default version)
+ii  libboost-system1.71-dev:amd64                 1.71.0-6ubuntu6                         amd64        Operating system (e.g. diagnostics support) library
+ii  libboost-system1.71.0:amd64                   1.71.0-6ubuntu6                         amd64        Operating system (e.g. diagnostics support) library
+ii  libboost-test-dev:amd64                       1.71.0.0ubuntu2                         amd64        components for writing and executing test suites (default version)
+ii  libboost-test1.71-dev:amd64                   1.71.0-6ubuntu6                         amd64        components for writing and executing test suites
+ii  libboost-test1.71.0:amd64                     1.71.0-6ubuntu6                         amd64        components for writing and executing test suites
+ii  libboost-thread-dev:amd64                     1.71.0.0ubuntu2                         amd64        portable C++ multi-threading (default version)
+ii  libboost-thread1.71-dev:amd64                 1.71.0-6ubuntu6                         amd64        portable C++ multi-threading
+ii  libboost-thread1.71.0:amd64                   1.71.0-6ubuntu6                         amd64        portable C++ multi-threading
+ii  libboost-timer-dev:amd64                      1.71.0.0ubuntu2                         amd64        C++ wall clock and CPU process timers (default version)
+ii  libboost-timer1.71-dev:amd64                  1.71.0-6ubuntu6                         amd64        C++ wall clock and CPU process timers
+ii  libboost-timer1.71.0:amd64                    1.71.0-6ubuntu6                         amd64        C++ wall clock and CPU process timers
+ii  libboost-tools-dev                            1.71.0.0ubuntu2                         amd64        Boost C++ Libraries development tools (default version)
+ii  libboost-type-erasure-dev:amd64               1.71.0.0ubuntu2                         amd64        C++ runtime polymorphism based on concepts (default version)
+ii  libboost-type-erasure1.71-dev:amd64           1.71.0-6ubuntu6                         amd64        C++ runtime polymorphism based on concepts
+ii  libboost-type-erasure1.71.0:amd64             1.71.0-6ubuntu6                         amd64        C++ runtime polymorphism based on concepts
+ii  libboost-wave-dev:amd64                       1.71.0.0ubuntu2                         amd64        C99/C++ preprocessor library (default version)
+ii  libboost-wave1.71-dev:amd64                   1.71.0-6ubuntu6                         amd64        C99/C++ preprocessor library
+ii  libboost-wave1.71.0:amd64                     1.71.0-6ubuntu6                         amd64        C99/C++ preprocessor library
+ii  libboost1.71-dev:amd64                        1.71.0-6ubuntu6                         amd64        Boost C++ Libraries development files
+ii  libboost1.71-tools-dev                        1.71.0-6ubuntu6                         amd64        Boost C++ Libraries development tools
+ii  libcc1-0:amd64                                13.1.0-8ubuntu1~20.04.2                 amd64        GCC cc1 plugin for GDB
+ii  libceres-dev                                  1.14.0-4ubuntu1.1                       amd64        nonlinear least squares minimizer (development files)
+ii  libceres1                                     1.14.0-4ubuntu1.1                       amd64        nonlinear least squares minimizer (shared library)
+ii  libclang-common-10-dev                        1:10.0.0-4ubuntu1                       amd64        Clang library - Common development package
+ii  libclang-common-9-dev                         1:9.0.1-12                              amd64        Clang library - Common development package
+ii  libclang-cpp10                                1:10.0.0-4ubuntu1                       amd64        C++ interface to the Clang library
+ii  libclang-cpp18                                1:18.1.8-11~20.04.2                     amd64        C++ interface to the Clang library
+ii  libclang-cpp9                                 1:9.0.1-12                              amd64        C++ interface to the Clang library
+ii  libclang1-10                                  1:10.0.0-4ubuntu1                       amd64        C interface to the Clang library
+ii  libclang1-8                                   1:8.0.1-9                               amd64        C interface to the Clang library
+ii  libclang1-9                                   1:9.0.1-12                              amd64        C interface to the Clang library
+ii  libdapclient6v5:amd64                         3.20.5-1                                amd64        Client library for the Network Data Access Protocol
+ii  libeigen3-dev                                 3.3.7-2                                 all          lightweight C++ template library for linear algebra
+ii  libflann-dev:amd64                            1.9.1+dfsg-9build1                      amd64        Fast Library for Approximate Nearest Neighbors - development
+ii  libflann1.9:amd64                             1.9.1+dfsg-9build1                      amd64        Fast Library for Approximate Nearest Neighbors - runtime
+ii  libgcc-10-dev:amd64                           10.5.0-1ubuntu1~20.04                   amd64        GCC support library (development files)
+ii  libgcc-7-dev:amd64                            7.5.0-6ubuntu2                          amd64        GCC support library (development files)
+ii  libgcc-8-dev:amd64                            8.4.0-3ubuntu2                          amd64        GCC support library (development files)
+ii  libgcc-9-dev:amd64                            9.4.0-1ubuntu1~20.04.2                  amd64        GCC support library (development files)
+ii  libgcc-s1:amd64                               13.1.0-8ubuntu1~20.04.2                 amd64        GCC support library
+ii  libgcc-s1:i386                                13.1.0-8ubuntu1~20.04.2                 i386         GCC support library
+ii  libgomp1:amd64                                13.1.0-8ubuntu1~20.04.2                 amd64        GCC OpenMP (GOMP) support library
+ii  libignition-cmake2-dev:amd64                  2.17.2-1~focal                          amd64        Gazebo CMake Library - Development files
+ii  libignition-tools-dev:amd64                   1.5.0-1~focal                           amd64        Entry point for using all the suite of Gazebo tools - cmake support
+ii  libnetplan0:amd64                             0.104-0ubuntu2~20.04.6                  amd64        YAML network configuration abstraction runtime library
+ii  libopencv-calib3d-dev:amd64                   4.2.0+dfsg-5                            amd64        development files for libopencv-calib3d4.2
+ii  libopencv-calib3d4.2:amd64                    4.2.0+dfsg-5                            amd64        computer vision Camera Calibration library
+ii  libopencv-contrib-dev:amd64                   4.2.0+dfsg-5                            amd64        development files for libopencv-contrib4.2
+ii  libopencv-contrib4.2:amd64                    4.2.0+dfsg-5                            amd64        computer vision contrlib library
+ii  libopencv-core-dev:amd64                      4.2.0+dfsg-5                            amd64        development files for libopencv-core4.2
+ii  libopencv-core4.2:amd64                       4.2.0+dfsg-5                            amd64        computer vision core library
+ii  libopencv-dev                                 4.2.0+dfsg-5                            amd64        development files for opencv
+ii  libopencv-dnn-dev:amd64                       4.2.0+dfsg-5                            amd64        development files for libopencv-dnn4.2
+ii  libopencv-dnn4.2:amd64                        4.2.0+dfsg-5                            amd64        computer vision Deep neural network module
+ii  libopencv-features2d-dev:amd64                4.2.0+dfsg-5                            amd64        development files for libopencv-features2d4.2
+ii  libopencv-features2d4.2:amd64                 4.2.0+dfsg-5                            amd64        computer vision Feature Detection and Descriptor Extraction library
+ii  libopencv-flann-dev:amd64                     4.2.0+dfsg-5                            amd64        development files for libopencv-flann4.2
+ii  libopencv-flann4.2:amd64                      4.2.0+dfsg-5                            amd64        computer vision Clustering and Search in Multi-Dimensional spaces library
+ii  libopencv-highgui-dev:amd64                   4.2.0+dfsg-5                            amd64        development files for libopencv-highgui4.2
+ii  libopencv-highgui4.2:amd64                    4.2.0+dfsg-5                            amd64        computer vision High-level GUI and Media I/O library
+ii  libopencv-imgcodecs-dev:amd64                 4.2.0+dfsg-5                            amd64        development files for libopencv-imgcodecs4.2
+ii  libopencv-imgcodecs4.2:amd64                  4.2.0+dfsg-5                            amd64        computer vision Image Codecs library
+ii  libopencv-imgproc-dev:amd64                   4.2.0+dfsg-5                            amd64        development files for libopencv-imgproc4.2
+ii  libopencv-imgproc4.2:amd64                    4.2.0+dfsg-5                            amd64        computer vision Image Processing library
+ii  libopencv-ml-dev:amd64                        4.2.0+dfsg-5                            amd64        development files for libopencv-ml4.2
+ii  libopencv-ml4.2:amd64                         4.2.0+dfsg-5                            amd64        computer vision Machine Learning library
+ii  libopencv-objdetect-dev:amd64                 4.2.0+dfsg-5                            amd64        development files for libopencv-objdetect4.2
+ii  libopencv-objdetect4.2:amd64                  4.2.0+dfsg-5                            amd64        computer vision Object Detection library
+ii  libopencv-photo-dev:amd64                     4.2.0+dfsg-5                            amd64        development files for libopencv-photo4.2
+ii  libopencv-photo4.2:amd64                      4.2.0+dfsg-5                            amd64        computer vision computational photography library
+ii  libopencv-shape-dev:amd64                     4.2.0+dfsg-5                            amd64        development files for libopencv-shape4.2
+ii  libopencv-shape4.2:amd64                      4.2.0+dfsg-5                            amd64        computer vision shape descriptors and matchers library
+ii  libopencv-stitching-dev:amd64                 4.2.0+dfsg-5                            amd64        development files for libopencv-stitching4.2
+ii  libopencv-stitching4.2:amd64                  4.2.0+dfsg-5                            amd64        computer vision image stitching library
+ii  libopencv-superres-dev:amd64                  4.2.0+dfsg-5                            amd64        development files for libopencv-superres4.2
+ii  libopencv-superres4.2:amd64                   4.2.0+dfsg-5                            amd64        computer vision Super Resolution library
+ii  libopencv-ts-dev:amd64                        4.2.0+dfsg-5                            amd64        development files for TS library of OpenCV (Open Computer Vision)
+ii  libopencv-video-dev:amd64                     4.2.0+dfsg-5                            amd64        development files for libopencv-video4.2
+ii  libopencv-video4.2:amd64                      4.2.0+dfsg-5                            amd64        computer vision Video analysis library
+ii  libopencv-videoio-dev:amd64                   4.2.0+dfsg-5                            amd64        development files for libopencv-videoio4.2
+ii  libopencv-videoio4.2:amd64                    4.2.0+dfsg-5                            amd64        computer vision Video I/O library
+ii  libopencv-videostab-dev:amd64                 4.2.0+dfsg-5                            amd64        development files for libopencv-videostab4.2
+ii  libopencv-videostab4.2:amd64                  4.2.0+dfsg-5                            amd64        computer vision video stabilization library
+ii  libopencv-viz-dev:amd64                       4.2.0+dfsg-5                            amd64        development files for libopencv-viz4.2
+ii  libopencv-viz4.2:amd64                        4.2.0+dfsg-5                            amd64        computer vision 3D data visualization library
+ii  libopencv4.2-java                             4.2.0+dfsg-5                            all          Java bindings for the computer vision library
+ii  libopencv4.2-jni                              4.2.0+dfsg-5                            amd64        Java jni library for the computer vision library
+ii  libpcl-apps1.10:amd64                         1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - apps library
+ii  libpcl-common1.10:amd64                       1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - common library
+ii  libpcl-dev                                    1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - development files
+ii  libpcl-features1.10:amd64                     1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - features library
+ii  libpcl-filters1.10:amd64                      1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - filters library
+ii  libpcl-io1.10:amd64                           1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - I/O library
+ii  libpcl-kdtree1.10:amd64                       1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - kdtree library
+ii  libpcl-keypoints1.10:amd64                    1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - keypoints library
+ii  libpcl-ml1.10:amd64                           1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - ml library
+ii  libpcl-octree1.10:amd64                       1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - octree library
+ii  libpcl-outofcore1.10:amd64                    1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - outofcore library
+ii  libpcl-people1.10:amd64                       1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - people library
+ii  libpcl-recognition1.10:amd64                  1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - recognition library
+ii  libpcl-registration1.10:amd64                 1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - registration library
+ii  libpcl-sample-consensus1.10:amd64             1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - sample consensus library
+ii  libpcl-search1.10:amd64                       1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - search library
+ii  libpcl-segmentation1.10:amd64                 1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - segmentation library
+ii  libpcl-stereo1.10:amd64                       1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - stereo library
+ii  libpcl-surface1.10:amd64                      1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - surface library
+ii  libpcl-tracking1.10:amd64                     1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - tracking library
+ii  libpcl-visualization1.10:amd64                1.10.0+dfsg-5ubuntu1                    amd64        Point Cloud Library - visualization library
+ii  libquadmath0:amd64                            13.1.0-8ubuntu1~20.04.2                 amd64        GCC Quad-Precision Math Library
+ii  libtbb-dev:amd64                              2020.1-2                                amd64        parallelism library for C++ - development files
+ii  libtbb2:amd64                                 2020.1-2                                amd64        parallelism library for C++ - runtime files
+ii  libuno-cppuhelpergcc3-3                       4:7.6.7-0ubuntu0.20.04.1~lo1            amd64        LibreOffice UNO runtime environment -- CPPU helper library
+ii  libuno-purpenvhelpergcc3-3                    4:7.6.7-0ubuntu0.20.04.1~lo1            amd64        LibreOffice UNO runtime environment -- "purpose environment" helper
+ii  libuno-salhelpergcc3-3                        4:7.6.7-0ubuntu0.20.04.1~lo1            amd64        LibreOffice UNO runtime environment -- SAL helpers for C++ library
+ii  libvtk6.3                                     6.3.0+dfsg2-5build2                     amd64        VTK libraries
+ii  libvtk7-dev                                   7.1.1+dfsg2-2ubuntu1                    amd64        VTK header files
+ii  libvtk7-java                                  7.1.1+dfsg2-2ubuntu1                    amd64        Visualization Toolkit - A high level 3D visualization library - java
+ii  libvtk7-jni                                   7.1.1+dfsg2-2ubuntu1                    amd64        Visualization Toolkit - A high level 3D visualization library - java
+ii  libvtk7-qt-dev                                7.1.1+dfsg2-2ubuntu1                    amd64        VTK header files, containing Qt files
+ii  libvtk7.1p                                    7.1.1+dfsg2-2ubuntu1                    amd64        VTK libraries
+ii  libvtk7.1p-qt                                 7.1.1+dfsg2-2ubuntu1                    amd64        VTK libraries, Qt files
+ii  libx32gcc-9-dev                               9.4.0-1ubuntu1~20.04.2                  amd64        GCC support library (x32 development files)
+ii  libx32gcc-s1                                  13.1.0-8ubuntu1~20.04.2                 amd64        GCC support library (x32)
+ii  libx32gomp1                                   13.1.0-8ubuntu1~20.04.2                 amd64        GCC OpenMP (GOMP) support library (x32)
+ii  libx32quadmath0                               13.1.0-8ubuntu1~20.04.2                 amd64        GCC Quad-Precision Math Library (x32)
+ii  libyaml-0-2:amd64                             0.2.2-1                                 amd64        Fast YAML 1.1 parser and emitter library
+ii  libyaml-cpp-dev                               0.6.2-4ubuntu1                          amd64        YAML parser and emitter for C++ - development files
+ii  libyaml-cpp0.6:amd64                          0.6.2-4ubuntu1                          amd64        YAML parser and emitter for C++
+ii  libyaml-dev:amd64                             0.2.2-1                                 amd64        Fast YAML 1.1 parser and emitter library (development)
+ii  netplan.io                                    0.104-0ubuntu2~20.04.6                  amd64        YAML network configuration abstraction for various backends
+ii  opencv-data                                   4.2.0+dfsg-5                            all          development data for opencv
+ii  python3-opencv                                4.2.0+dfsg-5                            amd64        Python 3 bindings for the computer vision library
+ii  python3-vtk7                                  7.1.1+dfsg2-2ubuntu1                    amd64        Python bindings for VTK
+ii  python3-yaml                                  5.3.1-1ubuntu0.1                        amd64        YAML parser and emitter for Python3
+ii  ros-noetic-actionlib                          1.14.3-1focal.20250519.235901           amd64        The actionlib stack provides a standardized interface for interfacing with preemptable tasks.
+ii  ros-noetic-actionlib-msgs                     1.13.2-1focal.20250426.013228           amd64        actionlib_msgs defines the common messages to interact with an action server and an action client.
+ii  ros-noetic-angles                             1.9.14-1focal.20250426.230930           amd64        This package provides a set of simple math utilities to work with angles.
+ii  ros-noetic-bond                               1.8.7-1focal.20250426.013629            amd64        A bond allows two processes, A and B, to know when the other has terminated, either cleanly or by crashing.
+ii  ros-noetic-bondcpp                            1.8.7-1focal.20250519.230329            amd64        C++ implementation of bond, a mechanism for checking when another process has terminated.
+ii  ros-noetic-camera-calibration-parsers         1.12.1-1focal.20250519.235403           amd64        camera_calibration_parsers contains routines for reading and writing camera calibration parameters.
+ii  ros-noetic-catkin                             0.8.12-1focal.20250426.001935           amd64        Low-level build system macros and infrastructure for ROS.
+ii  ros-noetic-class-loader                       0.5.2-1focal.20250426.005342            amd64        The class_loader package is a ROS-independent package for loading plugins during runtime and the foundation of the higher level ROS &quot;pluginlib&quot; library.
+ii  ros-noetic-cmake-modules                      0.5.2-1focal.20250426.003525            amd64        A common repository for CMake Modules which are not distributed with CMake but are commonly used by ROS packages.
+ii  ros-noetic-compressed-depth-image-transport   1.15.0-1focal.20250521.004155           amd64        Compressed_depth_image_transport provides a plugin to image_transport for transparently sending depth images (raw, floating-point) using PNG compression.
+ii  ros-noetic-compressed-image-transport         1.15.0-1focal.20250521.004234           amd64        Compressed_image_transport provides a plugin to image_transport for transparently sending images encoded as JPEG or PNG.
+ii  ros-noetic-cpp-common                         0.7.3-1focal.20250426.004527            amd64        cpp_common contains C++ code for doing things that are not necessarily ROS related, but are useful for multiple packages.
+ii  ros-noetic-cv-bridge                          1.16.2-1focal.20250519.235655           amd64        This contains CvBridge, which converts between ROS Image messages and OpenCV images.
+ii  ros-noetic-ddynamic-reconfigure               0.4.2-1focal.20250521.004243            amd64        The ddynamic_reconfigure package
+ii  ros-noetic-diagnostic-msgs                    1.13.2-1focal.20250426.013751           amd64        This package holds the diagnostic messages which provide the standardized interface for the diagnostic and runtime monitoring systems in ROS.
+ii  ros-noetic-diagnostic-updater                 1.12.1-1focal.20250519.233305           amd64        diagnostic_updater contains tools for easily updating diagnostics.
+ii  ros-noetic-dynamic-reconfigure                1.7.6-1focal.20250521.000900            amd64        The dynamic_reconfigure package provides a means to update parameters at runtime without having to restart the node.
+ii  ros-noetic-eigen-conversions                  1.13.4-1focal.20250426.012425           amd64        Conversion functions between: - Eigen and KDL - Eigen and geometry_msgs.
+ii  ros-noetic-gencpp                             0.7.2-1focal.20250426.005903            amd64        C++ ROS message and service generators.
+ii  ros-noetic-geneus                             3.0.0-1focal.20250426.010129            amd64        EusLisp ROS message and service generators.
+ii  ros-noetic-genlisp                            0.4.18-1focal.20250426.005852           amd64        Common-Lisp ROS message and service generators.
+ii  ros-noetic-genmsg                             0.6.1-1focal.20250426.005243            amd64        Standalone Python library for generating ROS message and service data structures for various languages.
+ii  ros-noetic-gennodejs                          2.0.2-1focal.20250426.005653            amd64        Javascript ROS message and service generators.
+ii  ros-noetic-genpy                              0.6.18-1focal.20250426.005606           amd64        Python ROS message and service generators.
+ii  ros-noetic-geographic-msgs                    0.5.6-1focal.20250426.013201            amd64        ROS messages for Geographic Information Systems.
+ii  ros-noetic-geometry-msgs                      1.13.2-1focal.20250426.011953           amd64        geometry_msgs provides messages for common geometric primitives such as points, vectors, and poses.
+ii  ros-noetic-image-geometry                     1.16.2-1focal.20250520.005312           amd64        `image_geometry` contains C++ and Python libraries for interpreting images geometrically.
+ii  ros-noetic-image-transport                    1.12.1-1focal.20250519.235437           amd64        image_transport should always be used to subscribe to and publish images.
+ii  ros-noetic-image-transport-plugins            1.15.0-1focal.20250521.012022           amd64        A set of plugins for publishing and subscribing to sensor_msgs/Image topics in representations other than raw pixel data.
+ii  ros-noetic-image-view                         1.17.0-1focal.20250521.003902           amd64        A simple viewer for ROS image topics.
+ii  ros-noetic-interactive-markers                1.12.2-1focal.20250520.002353           amd64        3D interactive marker communication library for RViz and similar tools.
+ii  ros-noetic-kdl-parser                         1.14.2-1focal.20250519.234758           amd64        The Kinematics and Dynamics Library (KDL) defines a tree structure to represent the kinematic and dynamic parameters of a robot mechanism.
+ii  ros-noetic-laser-geometry                     1.6.8-1focal.20250520.002454            amd64        This package contains a class for converting from a 2D laser scan as defined by sensor_msgs/LaserScan into a point cloud as defined by sensor_msgs/PointCloud or sensor_msgs/PointCloud2.
+ii  ros-noetic-libmavconn                         1.20.1-1focal.20250505.183037           amd64        MAVLink communication library.
+ii  ros-noetic-map-msgs                           1.14.2-1focal.20250519.235841           amd64        This package defines messages commonly used in mapping packages.
+ii  ros-noetic-mavlink                            2025.5.5-1focal.20250505.181801         amd64        MAVLink message marshaling library.
+ii  ros-noetic-mavros                             1.20.1-1focal.20250520.005419           amd64        MAVROS -- MAVLink extendable communication node for ROS with proxy for Ground Control Station.
+ii  ros-noetic-mavros-extras                      1.20.1-1focal.20250520.011525           amd64        Extra nodes and plugins for MAVROS.
+ii  ros-noetic-mavros-msgs                        1.20.1-1focal.20250520.005026           amd64        mavros_msgs defines messages for MAVROS.
+ii  ros-noetic-media-export                       0.3.0-1focal.20250426.005754            amd64        Placeholder package enabling generic export of media paths.
+ii  ros-noetic-message-filters                    1.17.4-1focal.20250519.233523           amd64        A set of message filters which take in messages and may output those messages at a later time, based on the conditions that filter needs met.
+ii  ros-noetic-message-generation                 0.4.1-1focal.20250426.010337            amd64        Package modeling the build-time dependencies for generating language bindings of messages.
+ii  ros-noetic-message-runtime                    0.4.13-1focal.20250426.011132           amd64        Package modeling the run-time dependencies for language bindings of messages.
+ii  ros-noetic-nav-msgs                           1.13.2-1focal.20250426.013359           amd64        nav_msgs defines the common messages used to interact with the navigation stack.
+ii  ros-noetic-nodelet                            1.11.2-1focal.20250519.231850           amd64        The nodelet package is designed to provide a way to run multiple algorithms in the same process with zero copy transport between algorithms.
+ii  ros-noetic-nodelet-topic-tools                1.11.2-1focal.20250521.003920           amd64        This package contains common nodelet tools such as a mux, demux and throttle.
+ii  ros-noetic-pcl-conversions                    1.7.4-1focal.20250520.005606            amd64        Provides conversions from PCL data types and ROS message types
+ii  ros-noetic-pcl-msgs                           0.3.0-1focal.20250520.005335            amd64        Package containing PCL (Point Cloud Library)-related ROS messages.
+ii  ros-noetic-pcl-ros                            1.7.4-1focal.20250521.004323            amd64        PCL (Point Cloud Library) ROS interface stack.
+ii  ros-noetic-pluginlib                          1.13.2-1focal.20250426.231402           amd64        The pluginlib package provides tools for writing and dynamically loading plugins using the ROS build infrastructure.
+ii  ros-noetic-python-qt-binding                  0.4.6-1focal.20250426.201332            amd64        This stack provides Python bindings for Qt.
+ii  ros-noetic-resource-retriever                 1.12.10-1focal.20250426.231456          amd64        This package retrieves data from url-format files such as http://, ftp://, package:// file://, etc., and loads the data into memory.
+ii  ros-noetic-robot-state-publisher              1.15.3-1focal.20250520.002451           amd64        This package allows you to publish the state of a robot to tf2.
+ii  ros-noetic-ros-environment                    1.3.2-1focal.20250426.010109            amd64        The package provides the environment variables `ROS_VERSION`, `ROS_DISTRO`, `ROS_PACKAGE_PATH`, and `ROS_ETC_DIR`.
+ii  ros-noetic-rosbag                             1.17.4-1focal.20250519.234429           amd64        This is a set of tools for recording from and playing back to ROS topics.
+ii  ros-noetic-rosbag-migration-rule              1.0.2-1focal.20250426.010122            amd64        This empty package allows to export rosbag migration rule files without depending on rosbag.
+ii  ros-noetic-rosbag-storage                     1.17.4-1focal.20250519.233542           amd64        This is a set of tools for recording from and playing back ROS message without relying on the ROS client library.
+ii  ros-noetic-rosbash                            1.15.10-1focal.20250426.230519          amd64        Assorted shell commands for using ros with bash.
+ii  ros-noetic-rosbuild                           1.15.10-1focal.20250426.201143          amd64        rosbuild contains scripts for managing the CMake-based build system for ROS.
+ii  ros-noetic-rosclean                           1.15.10-1focal.20250426.201147          amd64        rosclean: cleanup filesystem resources (e.g.
+ii  ros-noetic-rosconsole                         1.14.4-1focal.20250426.230918           amd64        ROS console output library.
+ii  ros-noetic-rosconsole-bridge                  0.5.5-1focal.20250426.231403            amd64        rosconsole_bridge is a package used in conjunction with console_bridge and rosconsole for connecting console_bridge-based logging to rosconsole-based logging.
+ii  ros-noetic-roscpp                             1.17.4-1focal.20250519.225343           amd64        roscpp is a C++ implementation of ROS.
+ii  ros-noetic-roscpp-serialization               0.7.3-1focal.20250426.010742            amd64        roscpp_serialization contains the code for serialization as described in MessagesSerializationAndAdaptingTypes.
+ii  ros-noetic-roscpp-traits                      0.7.3-1focal.20250426.010711            amd64        roscpp_traits contains the message traits code as described in MessagesTraits.
+ii  ros-noetic-rosgraph                           1.17.4-1focal.20250519.224802           amd64        rosgraph contains the rosgraph command-line tool, which prints information about the ROS Computation Graph.
+ii  ros-noetic-rosgraph-msgs                      1.11.4-1focal.20250426.012754           amd64        Messages relating to the ROS Computation Graph.
+ii  ros-noetic-roslaunch                          1.17.4-1focal.20250519.232645           amd64        roslaunch is a tool for easily launching multiple ROS nodes locally and remotely via SSH, as well as setting parameters on the Parameter Server.
+ii  ros-noetic-roslib                             1.15.10-1focal.20250426.230521          amd64        Base dependencies and support libraries for ROS.
+ii  ros-noetic-roslint                            0.12.0-1focal.20250426.010138           amd64        CMake lint commands for ROS packages.
+ii  ros-noetic-roslz4                             1.17.4-1focal.20250519.224812           amd64        A Python and C++ implementation of the LZ4 streaming format.
+ii  ros-noetic-rosmaster                          1.17.4-1focal.20250519.225411           amd64        ROS Master implementation.
+ii  ros-noetic-rosmsg                             1.17.4-1focal.20250519.234838           amd64        rosmsg contains two command-line tools: rosmsg and rossrv.
+ii  ros-noetic-rosnode                            1.17.4-1focal.20250519.235748           amd64        rosnode is a command-line tool for displaying debug information about ROS Nodes, including publications, subscriptions and connections.
+ii  ros-noetic-rosout                             1.17.4-1focal.20250519.231643           amd64        System-wide logging mechanism for messages sent to the /rosout topic.
+ii  ros-noetic-rospack                            2.6.4-1focal.20250426.230225            amd64        ROS Package Tool
+ii  ros-noetic-rosparam                           1.17.4-1focal.20250519.225309           amd64        rosparam contains the rosparam command-line tool for getting and setting ROS Parameters on the Parameter Server using YAML-encoded files.
+ii  ros-noetic-rospy                              1.17.4-1focal.20250519.231646           amd64        rospy is a pure Python client library for ROS.
+ii  ros-noetic-rosservice                         1.17.4-1focal.20250519.235234           amd64        rosservice contains the rosservice command-line tool for listing and querying ROS Services.
+ii  ros-noetic-rostest                            1.17.4-1focal.20250519.233130           amd64        Integration test suite based on roslaunch that is compatible with xUnit frameworks.
+ii  ros-noetic-rostime                            0.7.3-1focal.20250426.004754            amd64        Time and Duration implementations for C++ libraries, including roscpp.
+ii  ros-noetic-rostopic                           1.17.4-1focal.20250519.235106           amd64        rostopic contains the rostopic command-line tool for displaying debug information about ROS Topics, including publishers, subscribers, publishing rate, and ROS Messages.
+ii  ros-noetic-rosunit                            1.15.10-1focal.20250426.230759          amd64        Unit-testing package for ROS.
+ii  ros-noetic-roswtf                             1.17.4-1focal.20250519.235947           amd64        roswtf is a tool for diagnosing issues with a running ROS system.
+ii  ros-noetic-rviz                               1.14.26-1focal.20250520.002916          amd64        3D visualization tool for ROS.
+ii  ros-noetic-sensor-msgs                        1.13.2-1focal.20250519.234916           amd64        This package defines messages for commonly used sensors, including cameras and scanning laser rangefinders.
+ii  ros-noetic-smclib                             1.8.7-1focal.20250426.010546            amd64        The State Machine Compiler (SMC) from http://smc.sourceforge.net/ converts a language-independent description of a state machine into the source code to support that state machine.
+ii  ros-noetic-std-msgs                           0.5.14-1focal.20250426.011621           amd64        Standard ROS Messages including common message types representing primitive data types and other basic message constructs, such as multiarrays.
+ii  ros-noetic-std-srvs                           1.11.4-1focal.20250426.011617           amd64        Common service definitions.
+ii  ros-noetic-tf                                 1.13.4-1focal.20250520.001125           amd64        tf is a package that lets the user keep track of multiple coordinate frames over time.
+ii  ros-noetic-tf2                                0.7.10-1focal.20250502.231751           amd64        tf2 is the second generation of the transform library, which lets the user keep track of multiple coordinate frames over time.
+ii  ros-noetic-tf2-eigen                          0.7.10-1focal.20250502.232642           amd64        tf2_eigen
+ii  ros-noetic-tf2-geometry-msgs                  0.7.10-1focal.20250520.001448           amd64        tf2_geometry_msgs
+ii  ros-noetic-tf2-kdl                            0.7.10-1focal.20250520.001448           amd64        KDL binding for tf2
+ii  ros-noetic-tf2-msgs                           0.7.10-1focal.20250502.231510           amd64        tf2_msgs
+ii  ros-noetic-tf2-py                             0.7.10-1focal.20250519.232104           amd64        The tf2_py package
+ii  ros-noetic-tf2-ros                            0.7.10-1focal.20250520.000336           amd64        This package contains the ROS bindings for the tf2 library, for both Python and C++.
+ii  ros-noetic-theora-image-transport             1.15.0-1focal.20250521.004408           amd64        Theora_image_transport provides a plugin to image_transport for transparently sending an image stream encoded with the Theora codec.
+ii  ros-noetic-topic-tools                        1.17.4-1focal.20250519.233757           amd64        Tools for directing, throttling, selecting, and otherwise messing with ROS topics at a meta level.
+ii  ros-noetic-trajectory-msgs                    1.13.2-1focal.20250426.012617           amd64        This package defines messages for defining robot trajectories.
+ii  ros-noetic-urdf                               1.13.4-1focal.20250519.233550           amd64        This package contains a C++ parser for the Unified Robot Description Format (URDF), which is an XML format for representing a robot model.
+ii  ros-noetic-uuid-msgs                          1.0.6-1focal.20250426.013002            amd64        ROS messages for universally unique identifiers.
+ii  ros-noetic-vision-opencv                      1.16.2-1focal.20250520.015345           amd64        Packages for interfacing ROS with OpenCV, a library of programming functions for real time computer vision.
+ii  ros-noetic-visualization-msgs                 1.13.2-1focal.20250426.012640           amd64        visualization_msgs is a set of messages used by higher level packages, such as rviz, that deal in visualization-specific data.
+ii  ros-noetic-xacro                              1.14.20-1focal.20250519.233806          amd64        Xacro (XML Macros) Xacro is an XML macro language.
+ii  ros-noetic-xmlrpcpp                           1.17.4-1focal.20250519.224718           amd64        XmlRpc++ is a C++ implementation of the XML-RPC protocol.
+ii  tcl-vtk7                                      7.1.1+dfsg2-2ubuntu1                    amd64        Tcl bindings for VTK
+ii  vtk7                                          7.1.1+dfsg2-2ubuntu1                    amd64        Binaries for VTK7

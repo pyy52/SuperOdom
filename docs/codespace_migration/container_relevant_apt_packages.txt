@@ -1,0 +1,550 @@
+==============FAST-LIO ROS2 Docker Env Ready================
+ii  cmake                                              3.22.1-1ubuntu1.22.04.2                 amd64        cross-platform, open-source make system
+ii  cmake-data                                         3.22.1-1ubuntu1.22.04.2                 all          CMake data files (modules, templates and documentation)
+ii  g++                                                4:11.2.0-1ubuntu1                       amd64        GNU C++ compiler
+ii  g++-11                                             11.4.0-1ubuntu1~22.04.3                 amd64        GNU C++ compiler
+ii  gcc                                                4:11.2.0-1ubuntu1                       amd64        GNU C compiler
+ii  gcc-11                                             11.4.0-1ubuntu1~22.04.3                 amd64        GNU C compiler
+ii  gcc-11-base:amd64                                  11.4.0-1ubuntu1~22.04.3                 amd64        GCC, the GNU Compiler Collection (base package)
+ii  gcc-12-base:amd64                                  12.3.0-1ubuntu1~22.04.3                 amd64        GCC, the GNU Compiler Collection (base package)
+ii  libarpack2:amd64                                   3.8.0-1                                 amd64        Fortran77 subroutines to solve large scale eigenvalue problems
+ii  libarpack2-dev:amd64                               3.8.0-1                                 amd64        Fortran77 subroutines to solve large scale eigenvalue problems (development)
+ii  libboost-all-dev                                   1.74.0.3ubuntu7                         amd64        Boost C++ Libraries development files (ALL) (default version)
+ii  libboost-atomic-dev:amd64                          1.74.0.3ubuntu7                         amd64        atomic data types, operations, and memory ordering constraints (default version)
+ii  libboost-atomic1.74-dev:amd64                      1.74.0-14ubuntu3                        amd64        atomic data types, operations, and memory ordering constraints
+ii  libboost-atomic1.74.0:amd64                        1.74.0-14ubuntu3                        amd64        atomic data types, operations, and memory ordering constraints
+ii  libboost-chrono-dev:amd64                          1.74.0.3ubuntu7                         amd64        C++ representation of time duration, time point, and clocks (default version)
+ii  libboost-chrono1.74-dev:amd64                      1.74.0-14ubuntu3                        amd64        C++ representation of time duration, time point, and clocks
+ii  libboost-chrono1.74.0:amd64                        1.74.0-14ubuntu3                        amd64        C++ representation of time duration, time point, and clocks
+ii  libboost-container-dev:amd64                       1.74.0.3ubuntu7                         amd64        C++ library that implements several well-known containers - dev files (default version)
+ii  libboost-container1.74-dev:amd64                   1.74.0-14ubuntu3                        amd64        C++ library that implements several well-known containers - dev files
+ii  libboost-container1.74.0:amd64                     1.74.0-14ubuntu3                        amd64        C++ library that implements several well-known containers
+ii  libboost-context-dev:amd64                         1.74.0.3ubuntu7                         amd64        provides a sort of cooperative multitasking on a single thread (default version)
+ii  libboost-context1.74-dev:amd64                     1.74.0-14ubuntu3                        amd64        provides a sort of cooperative multitasking on a single thread
+ii  libboost-context1.74.0:amd64                       1.74.0-14ubuntu3                        amd64        provides a sort of cooperative multitasking on a single thread
+ii  libboost-coroutine-dev:amd64                       1.74.0.3ubuntu7                         amd64        provides a sort of cooperative multitasking on a single thread (default version)
+ii  libboost-coroutine1.74-dev:amd64                   1.74.0-14ubuntu3                        amd64        provides a sort of cooperative multitasking on a single thread
+ii  libboost-coroutine1.74.0:amd64                     1.74.0-14ubuntu3                        amd64        provides a sort of cooperative multitasking on a single thread
+ii  libboost-date-time-dev:amd64                       1.74.0.3ubuntu7                         amd64        set of date-time libraries based on generic programming concepts (default version)
+ii  libboost-date-time1.74-dev:amd64                   1.74.0-14ubuntu3                        amd64        set of date-time libraries based on generic programming concepts
+ii  libboost-date-time1.74.0:amd64                     1.74.0-14ubuntu3                        amd64        set of date-time libraries based on generic programming concepts
+ii  libboost-dev:amd64                                 1.74.0.3ubuntu7                         amd64        Boost C++ Libraries development files (default version)
+ii  libboost-exception-dev:amd64                       1.74.0.3ubuntu7                         amd64        library to help write exceptions and handlers (default version)
+ii  libboost-exception1.74-dev:amd64                   1.74.0-14ubuntu3                        amd64        library to help write exceptions and handlers
+ii  libboost-fiber-dev:amd64                           1.74.0.3ubuntu7                         amd64        cooperatively-scheduled micro-/userland-threads (default version)
+ii  libboost-fiber1.74-dev:amd64                       1.74.0-14ubuntu3                        amd64        cooperatively-scheduled micro-/userland-threads
+ii  libboost-fiber1.74.0:amd64                         1.74.0-14ubuntu3                        amd64        cooperatively-scheduled micro-/userland-threads
+ii  libboost-filesystem-dev:amd64                      1.74.0.3ubuntu7                         amd64        filesystem operations (portable paths, iteration over directories, etc) in C++ (default version)
+ii  libboost-filesystem1.74-dev:amd64                  1.74.0-14ubuntu3                        amd64        filesystem operations (portable paths, iteration over directories, etc) in C++
+ii  libboost-filesystem1.74.0:amd64                    1.74.0-14ubuntu3                        amd64        filesystem operations (portable paths, iteration over directories, etc) in C++
+ii  libboost-graph-dev:amd64                           1.74.0.3ubuntu7                         amd64        generic graph components and algorithms in C++ (default version)
+ii  libboost-graph-parallel-dev                        1.74.0.3ubuntu7                         amd64        generic graph components and algorithms in C++ (default version)
+ii  libboost-graph-parallel1.74-dev                    1.74.0-14ubuntu3                        amd64        generic graph components and algorithms in C++
+ii  libboost-graph-parallel1.74.0                      1.74.0-14ubuntu3                        amd64        generic graph components and algorithms in C++
+ii  libboost-graph1.74-dev:amd64                       1.74.0-14ubuntu3                        amd64        generic graph components and algorithms in C++
+ii  libboost-graph1.74.0:amd64                         1.74.0-14ubuntu3                        amd64        generic graph components and algorithms in C++
+ii  libboost-iostreams-dev:amd64                       1.74.0.3ubuntu7                         amd64        Boost.Iostreams Library development files (default version)
+ii  libboost-iostreams1.74-dev:amd64                   1.74.0-14ubuntu3                        amd64        Boost.Iostreams Library development files
+ii  libboost-iostreams1.74.0:amd64                     1.74.0-14ubuntu3                        amd64        Boost.Iostreams Library
+ii  libboost-locale-dev:amd64                          1.74.0.3ubuntu7                         amd64        C++ facilities for localization (default version)
+ii  libboost-locale1.74-dev:amd64                      1.74.0-14ubuntu3                        amd64        C++ facilities for localization
+ii  libboost-locale1.74.0:amd64                        1.74.0-14ubuntu3                        amd64        C++ facilities for localization
+ii  libboost-log-dev                                   1.74.0.3ubuntu7                         amd64        C++ logging library (default version)
+ii  libboost-log1.74-dev                               1.74.0-14ubuntu3                        amd64        C++ logging library
+ii  libboost-log1.74.0                                 1.74.0-14ubuntu3                        amd64        C++ logging library
+ii  libboost-math-dev:amd64                            1.74.0.3ubuntu7                         amd64        Boost.Math Library development files (default version)
+ii  libboost-math1.74-dev:amd64                        1.74.0-14ubuntu3                        amd64        Boost.Math Library development files
+ii  libboost-math1.74.0:amd64                          1.74.0-14ubuntu3                        amd64        Boost.Math Library
+ii  libboost-mpi-dev                                   1.74.0.3ubuntu7                         amd64        C++ interface to the Message Passing Interface (MPI) (default version)
+ii  libboost-mpi-python-dev                            1.74.0.3ubuntu7                         amd64        C++ interface to the Message Passing Interface (MPI), Python Bindings (default version)
+ii  libboost-mpi-python1.74-dev                        1.74.0-14ubuntu3                        amd64        C++ interface to the Message Passing Interface (MPI), Python Bindings
+ii  libboost-mpi-python1.74.0                          1.74.0-14ubuntu3                        amd64        C++ interface to the Message Passing Interface (MPI), Python Bindings
+ii  libboost-mpi1.74-dev                               1.74.0-14ubuntu3                        amd64        C++ interface to the Message Passing Interface (MPI)
+ii  libboost-mpi1.74.0                                 1.74.0-14ubuntu3                        amd64        C++ interface to the Message Passing Interface (MPI)
+ii  libboost-nowide-dev                                1.74.0.3ubuntu7                         amd64        Standard library functions with UTF-8 API on Windows development files (default version)
+ii  libboost-nowide1.74-dev                            1.74.0-14ubuntu3                        amd64        Standard library functions with UTF-8 API on Windows development files
+ii  libboost-nowide1.74.0                              1.74.0-14ubuntu3                        amd64        Standard library functions with UTF-8 API on Windows
+ii  libboost-numpy-dev                                 1.74.0.3ubuntu7                         amd64        Boost.Python NumPy extensions development files (default version)
+ii  libboost-numpy1.74-dev                             1.74.0-14ubuntu3                        amd64        Boost.Python NumPy extensions development files
+ii  libboost-numpy1.74.0                               1.74.0-14ubuntu3                        amd64        Boost.Python NumPy extensions
+ii  libboost-program-options-dev:amd64                 1.74.0.3ubuntu7                         amd64        program options library for C++ (default version)
+ii  libboost-program-options1.74-dev:amd64             1.74.0-14ubuntu3                        amd64        program options library for C++
+ii  libboost-program-options1.74.0:amd64               1.74.0-14ubuntu3                        amd64        program options library for C++
+ii  libboost-python-dev                                1.74.0.3ubuntu7                         amd64        Boost.Python Library development files (default version)
+ii  libboost-python1.74-dev                            1.74.0-14ubuntu3                        amd64        Boost.Python Library development files
+ii  libboost-python1.74.0                              1.74.0-14ubuntu3                        amd64        Boost.Python Library
+ii  libboost-random-dev:amd64                          1.74.0.3ubuntu7                         amd64        Boost Random Number Library (default version)
+ii  libboost-random1.74-dev:amd64                      1.74.0-14ubuntu3                        amd64        Boost Random Number Library
+ii  libboost-random1.74.0:amd64                        1.74.0-14ubuntu3                        amd64        Boost Random Number Library
+ii  libboost-regex-dev:amd64                           1.74.0.3ubuntu7                         amd64        regular expression library for C++ (default version)
+ii  libboost-regex1.74-dev:amd64                       1.74.0-14ubuntu3                        amd64        regular expression library for C++
+ii  libboost-regex1.74.0:amd64                         1.74.0-14ubuntu3                        amd64        regular expression library for C++
+ii  libboost-serialization-dev:amd64                   1.74.0.3ubuntu7                         amd64        serialization library for C++ (default version)
+ii  libboost-serialization1.74-dev:amd64               1.74.0-14ubuntu3                        amd64        serialization library for C++
+ii  libboost-serialization1.74.0:amd64                 1.74.0-14ubuntu3                        amd64        serialization library for C++
+ii  libboost-stacktrace-dev:amd64                      1.74.0.3ubuntu7                         amd64        library to capture and print stack traces - development files (default version)
+ii  libboost-stacktrace1.74-dev:amd64                  1.74.0-14ubuntu3                        amd64        library to capture and print stack traces - development files
+ii  libboost-stacktrace1.74.0:amd64                    1.74.0-14ubuntu3                        amd64        library to capture and print stack traces
+ii  libboost-system-dev:amd64                          1.74.0.3ubuntu7                         amd64        Operating system (e.g. diagnostics support) library (default version)
+ii  libboost-system1.74-dev:amd64                      1.74.0-14ubuntu3                        amd64        Operating system (e.g. diagnostics support) library
+ii  libboost-system1.74.0:amd64                        1.74.0-14ubuntu3                        amd64        Operating system (e.g. diagnostics support) library
+ii  libboost-test-dev:amd64                            1.74.0.3ubuntu7                         amd64        components for writing and executing test suites (default version)
+ii  libboost-test1.74-dev:amd64                        1.74.0-14ubuntu3                        amd64        components for writing and executing test suites
+ii  libboost-test1.74.0:amd64                          1.74.0-14ubuntu3                        amd64        components for writing and executing test suites
+ii  libboost-thread-dev:amd64                          1.74.0.3ubuntu7                         amd64        portable C++ multi-threading (default version)
+ii  libboost-thread1.74-dev:amd64                      1.74.0-14ubuntu3                        amd64        portable C++ multi-threading
+ii  libboost-thread1.74.0:amd64                        1.74.0-14ubuntu3                        amd64        portable C++ multi-threading
+ii  libboost-timer-dev:amd64                           1.74.0.3ubuntu7                         amd64        C++ wall clock and CPU process timers (default version)
+ii  libboost-timer1.74-dev:amd64                       1.74.0-14ubuntu3                        amd64        C++ wall clock and CPU process timers
+ii  libboost-timer1.74.0:amd64                         1.74.0-14ubuntu3                        amd64        C++ wall clock and CPU process timers
+ii  libboost-tools-dev                                 1.74.0.3ubuntu7                         amd64        Boost C++ Libraries development tools (default version)
+ii  libboost-type-erasure-dev:amd64                    1.74.0.3ubuntu7                         amd64        C++ runtime polymorphism based on concepts (default version)
+ii  libboost-type-erasure1.74-dev:amd64                1.74.0-14ubuntu3                        amd64        C++ runtime polymorphism based on concepts
+ii  libboost-type-erasure1.74.0:amd64                  1.74.0-14ubuntu3                        amd64        C++ runtime polymorphism based on concepts
+ii  libboost-wave-dev:amd64                            1.74.0.3ubuntu7                         amd64        C99/C++ preprocessor library (default version)
+ii  libboost-wave1.74-dev:amd64                        1.74.0-14ubuntu3                        amd64        C99/C++ preprocessor library
+ii  libboost-wave1.74.0:amd64                          1.74.0-14ubuntu3                        amd64        C99/C++ preprocessor library
+ii  libboost1.74-dev:amd64                             1.74.0-14ubuntu3                        amd64        Boost C++ Libraries development files
+ii  libboost1.74-tools-dev                             1.74.0-14ubuntu3                        amd64        Boost C++ Libraries development tools
+ii  libcc1-0:amd64                                     12.3.0-1ubuntu1~22.04.3                 amd64        GCC cc1 plugin for GDB
+ii  libceres-dev                                       2.0.0+dfsg1-5                           amd64        nonlinear least squares minimizer (development files)
+ii  libceres2                                          2.0.0+dfsg1-5                           amd64        nonlinear least squares minimizer (shared library)
+ii  libclang1-14                                       1:14.0.0-1ubuntu1.1                     amd64        C interface to the Clang library
+ii  libeigen3-dev                                      3.4.0-2ubuntu2                          all          lightweight C++ template library for linear algebra
+ii  libflann-dev:amd64                                 1.9.1+dfsg-11                           amd64        Fast Library for Approximate Nearest Neighbors - development
+ii  libflann1.9:amd64                                  1.9.1+dfsg-11                           amd64        Fast Library for Approximate Nearest Neighbors - runtime
+ii  libgcc-11-dev:amd64                                11.4.0-1ubuntu1~22.04.3                 amd64        GCC support library (development files)
+ii  libgcc-s1:amd64                                    12.3.0-1ubuntu1~22.04.3                 amd64        GCC support library
+ii  libgomp1:amd64                                     12.3.0-1ubuntu1~22.04.3                 amd64        GCC OpenMP (GOMP) support library
+ii  libignition-cmake2-dev:amd64                       2.19.0-1~jammy                          amd64        Gazebo CMake Library - Development files
+ii  libignition-math6-eigen3-dev:amd64                 6.16.0-1~jammy                          amd64        Gazebo Math Library - Eigen3 Development files
+ii  libignition-tools-dev:amd64                        1.5.0-1~jammy                           amd64        Entry point for using all the suite of Gazebo tools - cmake support
+ii  libopencv-calib3d-dev:amd64                        4.5.4+dfsg-9ubuntu4                     amd64        development files for libopencv-calib3d4.5d
+ii  libopencv-calib3d4.5d:amd64                        4.5.4+dfsg-9ubuntu4                     amd64        computer vision Camera Calibration library
+ii  libopencv-contrib-dev:amd64                        4.5.4+dfsg-9ubuntu4                     amd64        development files for libopencv-contrib4.5d
+ii  libopencv-contrib4.5d:amd64                        4.5.4+dfsg-9ubuntu4                     amd64        computer vision contrlib library
+ii  libopencv-core-dev:amd64                           4.5.4+dfsg-9ubuntu4                     amd64        development files for libopencv-core4.5d
+ii  libopencv-core4.5d:amd64                           4.5.4+dfsg-9ubuntu4                     amd64        computer vision core library
+ii  libopencv-dev                                      4.5.4+dfsg-9ubuntu4                     amd64        development files for opencv
+ii  libopencv-dnn-dev:amd64                            4.5.4+dfsg-9ubuntu4                     amd64        development files for libopencv-dnn4.5d
+ii  libopencv-dnn4.5d:amd64                            4.5.4+dfsg-9ubuntu4                     amd64        computer vision Deep neural network module
+ii  libopencv-features2d-dev:amd64                     4.5.4+dfsg-9ubuntu4                     amd64        development files for libopencv-features2d4.5d
+ii  libopencv-features2d4.5d:amd64                     4.5.4+dfsg-9ubuntu4                     amd64        computer vision Feature Detection and Descriptor Extraction library
+ii  libopencv-flann-dev:amd64                          4.5.4+dfsg-9ubuntu4                     amd64        development files for libopencv-flann4.5d
+ii  libopencv-flann4.5d:amd64                          4.5.4+dfsg-9ubuntu4                     amd64        computer vision Clustering and Search in Multi-Dimensional spaces library
+ii  libopencv-highgui-dev:amd64                        4.5.4+dfsg-9ubuntu4                     amd64        development files for libopencv-highgui4.5d
+ii  libopencv-highgui4.5d:amd64                        4.5.4+dfsg-9ubuntu4                     amd64        computer vision High-level GUI and Media I/O library
+ii  libopencv-imgcodecs-dev:amd64                      4.5.4+dfsg-9ubuntu4                     amd64        development files for libopencv-imgcodecs4.5d
+ii  libopencv-imgcodecs4.5d:amd64                      4.5.4+dfsg-9ubuntu4                     amd64        computer vision Image Codecs library
+ii  libopencv-imgproc-dev:amd64                        4.5.4+dfsg-9ubuntu4                     amd64        development files for libopencv-imgproc4.5d
+ii  libopencv-imgproc4.5d:amd64                        4.5.4+dfsg-9ubuntu4                     amd64        computer vision Image Processing library
+ii  libopencv-ml-dev:amd64                             4.5.4+dfsg-9ubuntu4                     amd64        development files for libopencv-ml4.5d
+ii  libopencv-ml4.5d:amd64                             4.5.4+dfsg-9ubuntu4                     amd64        computer vision Machine Learning library
+ii  libopencv-objdetect-dev:amd64                      4.5.4+dfsg-9ubuntu4                     amd64        development files for libopencv-objdetect4.5d
+ii  libopencv-objdetect4.5d:amd64                      4.5.4+dfsg-9ubuntu4                     amd64        computer vision Object Detection library
+ii  libopencv-photo-dev:amd64                          4.5.4+dfsg-9ubuntu4                     amd64        development files for libopencv-photo4.5d
+ii  libopencv-photo4.5d:amd64                          4.5.4+dfsg-9ubuntu4                     amd64        computer vision computational photography library
+ii  libopencv-shape-dev:amd64                          4.5.4+dfsg-9ubuntu4                     amd64        development files for libopencv-shape4.5d
+ii  libopencv-shape4.5d:amd64                          4.5.4+dfsg-9ubuntu4                     amd64        computer vision shape descriptors and matchers library
+ii  libopencv-stitching-dev:amd64                      4.5.4+dfsg-9ubuntu4                     amd64        development files for libopencv-stitching4.5d
+ii  libopencv-stitching4.5d:amd64                      4.5.4+dfsg-9ubuntu4                     amd64        computer vision image stitching library
+ii  libopencv-superres-dev:amd64                       4.5.4+dfsg-9ubuntu4                     amd64        development files for libopencv-superres4.5d
+ii  libopencv-superres4.5d:amd64                       4.5.4+dfsg-9ubuntu4                     amd64        computer vision Super Resolution library
+ii  libopencv-video-dev:amd64                          4.5.4+dfsg-9ubuntu4                     amd64        development files for libopencv-video4.5d
+ii  libopencv-video4.5d:amd64                          4.5.4+dfsg-9ubuntu4                     amd64        computer vision Video analysis library
+ii  libopencv-videoio-dev:amd64                        4.5.4+dfsg-9ubuntu4                     amd64        development files for libopencv-videoio4.5d
+ii  libopencv-videoio4.5d:amd64                        4.5.4+dfsg-9ubuntu4                     amd64        computer vision Video I/O library
+ii  libopencv-videostab-dev:amd64                      4.5.4+dfsg-9ubuntu4                     amd64        development files for libopencv-videostab4.5d
+ii  libopencv-videostab4.5d:amd64                      4.5.4+dfsg-9ubuntu4                     amd64        computer vision video stabilization library
+ii  libopencv-viz-dev:amd64                            4.5.4+dfsg-9ubuntu4                     amd64        development files for libopencv-viz4.5d
+ii  libopencv-viz4.5d:amd64                            4.5.4+dfsg-9ubuntu4                     amd64        computer vision 3D data visualization library
+ii  libpcl-apps1.12:amd64                              1.12.1+dfsg-3build1                     amd64        Point Cloud Library - apps library
+ii  libpcl-common1.12:amd64                            1.12.1+dfsg-3build1                     amd64        Point Cloud Library - common library
+ii  libpcl-dev                                         1.12.1+dfsg-3build1                     amd64        Point Cloud Library - development files
+ii  libpcl-features1.12:amd64                          1.12.1+dfsg-3build1                     amd64        Point Cloud Library - features library
+ii  libpcl-filters1.12:amd64                           1.12.1+dfsg-3build1                     amd64        Point Cloud Library - filters library
+ii  libpcl-io1.12:amd64                                1.12.1+dfsg-3build1                     amd64        Point Cloud Library - I/O library
+ii  libpcl-kdtree1.12:amd64                            1.12.1+dfsg-3build1                     amd64        Point Cloud Library - kdtree library
+ii  libpcl-keypoints1.12:amd64                         1.12.1+dfsg-3build1                     amd64        Point Cloud Library - keypoints library
+ii  libpcl-ml1.12:amd64                                1.12.1+dfsg-3build1                     amd64        Point Cloud Library - ml library
+ii  libpcl-octree1.12:amd64                            1.12.1+dfsg-3build1                     amd64        Point Cloud Library - octree library
+ii  libpcl-outofcore1.12:amd64                         1.12.1+dfsg-3build1                     amd64        Point Cloud Library - outofcore library
+ii  libpcl-people1.12:amd64                            1.12.1+dfsg-3build1                     amd64        Point Cloud Library - people library
+ii  libpcl-recognition1.12:amd64                       1.12.1+dfsg-3build1                     amd64        Point Cloud Library - recognition library
+ii  libpcl-registration1.12:amd64                      1.12.1+dfsg-3build1                     amd64        Point Cloud Library - registration library
+ii  libpcl-sample-consensus1.12:amd64                  1.12.1+dfsg-3build1                     amd64        Point Cloud Library - sample consensus library
+ii  libpcl-search1.12:amd64                            1.12.1+dfsg-3build1                     amd64        Point Cloud Library - search library
+ii  libpcl-segmentation1.12:amd64                      1.12.1+dfsg-3build1                     amd64        Point Cloud Library - segmentation library
+ii  libpcl-stereo1.12:amd64                            1.12.1+dfsg-3build1                     amd64        Point Cloud Library - stereo library
+ii  libpcl-surface1.12:amd64                           1.12.1+dfsg-3build1                     amd64        Point Cloud Library - surface library
+ii  libpcl-tracking1.12:amd64                          1.12.1+dfsg-3build1                     amd64        Point Cloud Library - tracking library
+ii  libpcl-visualization1.12:amd64                     1.12.1+dfsg-3build1                     amd64        Point Cloud Library - visualization library
+ii  libquadmath0:amd64                                 12.3.0-1ubuntu1~22.04.3                 amd64        GCC Quad-Precision Math Library
+ii  libtbb-dev:amd64                                   2021.5.0-7ubuntu2                       amd64        parallelism library for C++ - development files
+ii  libtbb12:amd64                                     2021.5.0-7ubuntu2                       amd64        parallelism library for C++ - runtime files
+ii  libtbb2:amd64                                      2020.3-1ubuntu3                         amd64        parallelism library for C++ - runtime files
+ii  libtbbmalloc2:amd64                                2021.5.0-7ubuntu2                       amd64        parallelism helper library for C++ - runtime files
+ii  libvtk9-dev                                        9.1.0+really9.1.0+dfsg2-3build1         amd64        VTK header files
+ii  libvtk9-java                                       9.1.0+really9.1.0+dfsg2-3build1         amd64        VTK - Java language support
+ii  libvtk9-qt-dev:amd64                               9.1.0+really9.1.0+dfsg2-3build1         amd64        VTK header files, containing Qt files
+ii  libvtk9.1:amd64                                    9.1.0+really9.1.0+dfsg2-3build1         amd64        VTK libraries
+ii  libvtk9.1-qt:amd64                                 9.1.0+really9.1.0+dfsg2-3build1         amd64        VTK libraries, Qt files
+ii  libyaml-0-2:amd64                                  0.2.2-1build2                           amd64        Fast YAML 1.1 parser and emitter library
+ii  libyaml-cpp-dev                                    0.7.0+dfsg-8build1                      amd64        YAML parser and emitter for C++ - development files
+ii  libyaml-cpp0.7:amd64                               0.7.0+dfsg-8build1                      amd64        YAML parser and emitter for C++
+ii  libyaml-dev:amd64                                  0.2.2-1build2                           amd64        Fast YAML 1.1 parser and emitter library (development)
+ii  python3-colcon-cmake                               0.2.30+upstream-1                       all          Extension for colcon to support CMake packages.
+ii  python3-opencv:amd64                               4.5.4+dfsg-9ubuntu4                     amd64        Python 3 bindings for the computer vision library
+ii  python3-vtk9                                       9.1.0+really9.1.0+dfsg2-3build1         amd64        Python bindings for VTK
+ii  python3-yaml                                       5.4.1-1ubuntu1                          amd64        YAML parser and emitter for Python3
+ii  ros-humble-action-msgs                             1.2.3-1jammy.20260718.011317            amd64        Messages and service definitions common among all ROS actions.
+ii  ros-humble-action-tutorials-cpp                    0.20.9-1jammy.20260726.113924           amd64        C++ action tutorial cpp code
+ii  ros-humble-action-tutorials-interfaces             0.20.9-1jammy.20260718.011804           amd64        Action tutorials action
+ii  ros-humble-action-tutorials-py                     0.20.9-1jammy.20260724.024653           amd64        Python action tutorial code
+ii  ros-humble-actionlib-msgs                          4.9.2-1jammy.20260718.021647            amd64        A package containing some message definitions used in the implementation of ROS 1 actions.
+ii  ros-humble-actuator-msgs                           0.0.1-1jammy.20260718.021722            amd64        ROS 2 message interface for Actuators.
+ii  ros-humble-ament-cmake                             1.3.14-1jammy.20260226.035055           amd64        The entry point package for the ament buildsystem in CMake.
+ii  ros-humble-ament-cmake-auto                        1.3.14-1jammy.20260304.074922           amd64        The auto-magic functions for ease to use of the ament buildsystem in CMake.
+ii  ros-humble-ament-cmake-copyright                   0.12.15-1jammy.20260304.195729          amd64        The CMake API for ament_copyright to check every source file contains copyright reference.
+ii  ros-humble-ament-cmake-core                        1.3.14-1jammy.20260224.185609           amd64        The core of the ament buildsystem in CMake.
+ii  ros-humble-ament-cmake-cppcheck                    0.12.15-1jammy.20260304.195901          amd64        The CMake API for ament_cppcheck to perform static code analysis on C/C++ code using Cppcheck.
+ii  ros-humble-ament-cmake-cpplint                     0.12.15-1jammy.20260304.195910          amd64        The CMake API for ament_cpplint to lint C / C++ code using cpplint.
+ii  ros-humble-ament-cmake-export-definitions          1.3.14-1jammy.20260226.010509           amd64        The ability to export definitions to downstream packages in the ament buildsystem.
+ii  ros-humble-ament-cmake-export-dependencies         1.3.14-1jammy.20260226.011144           amd64        The ability to export dependencies to downstream packages in the ament buildsystem in CMake.
+ii  ros-humble-ament-cmake-export-include-directories  1.3.14-1jammy.20260226.010305           amd64        The ability to export include directories to downstream packages in the ament buildsystem in CMake.
+ii  ros-humble-ament-cmake-export-interfaces           1.3.14-1jammy.20260226.005715           amd64        The ability to export interfaces to downstream packages in the ament buildsystem in CMake.
+ii  ros-humble-ament-cmake-export-libraries            1.3.14-1jammy.20260226.004939           amd64        The ability to export libraries to downstream packages in the ament buildsystem in CMake.
+ii  ros-humble-ament-cmake-export-link-flags           1.3.14-1jammy.20260226.010357           amd64        The ability to export link flags to downstream packages in the ament buildsystem.
+ii  ros-humble-ament-cmake-export-targets              1.3.14-1jammy.20260226.005705           amd64        The ability to export targets to downstream packages in the ament buildsystem in CMake.
+ii  ros-humble-ament-cmake-flake8                      0.12.15-1jammy.20260304.200009          amd64        The CMake API for ament_flake8 to check code syntax and style conventions with flake8.
+ii  ros-humble-ament-cmake-gen-version-h               1.3.14-1jammy.20260226.034234           amd64        Generate a C header containing the version number of the package
+ii  ros-humble-ament-cmake-gmock                       1.3.14-1jammy.20260226.034220           amd64        The ability to add Google mock-based tests in the ament buildsystem in CMake.
+ii  ros-humble-ament-cmake-gtest                       1.3.14-1jammy.20260226.013944           amd64        The ability to add gtest-based tests in the ament buildsystem in CMake.
+ii  ros-humble-ament-cmake-include-directories         1.3.14-1jammy.20260226.010650           amd64        The functionality to order include directories according to a chain of prefixes in the ament buildsystem in CMake.
+ii  ros-humble-ament-cmake-libraries                   1.3.14-1jammy.20260226.010453           amd64        The functionality to deduplicate libraries in the ament buildsystem in CMake.
+ii  ros-humble-ament-cmake-lint-cmake                  0.12.15-1jammy.20260304.195414          amd64        The CMake API for ament_lint_cmake to lint CMake code using cmakelint.
+ii  ros-humble-ament-cmake-pep257                      0.12.15-1jammy.20260304.200058          amd64        The CMake API for ament_pep257 to check code against the docstring style conventions in PEP 257.
+ii  ros-humble-ament-cmake-pytest                      1.3.14-1jammy.20260226.014042           amd64        The ability to run Python tests using pytest in the ament buildsystem in CMake.
+ii  ros-humble-ament-cmake-python                      1.3.14-1jammy.20260226.005145           amd64        The ability to use Python in the ament buildsystem in CMake.
+ii  ros-humble-ament-cmake-ros                         0.10.0-3jammy.20260304.201222           amd64        The ROS specific CMake bits in the ament buildsystem.
+ii  ros-humble-ament-cmake-target-dependencies         1.3.14-1jammy.20260226.013622           amd64        The ability to add definitions, include directories and libraries of a package to a target in the ament buildsystem in CMake.
+ii  ros-humble-ament-cmake-test                        1.3.14-1jammy.20260226.013528           amd64        The ability to add tests in the ament buildsystem in CMake.
+ii  ros-humble-ament-cmake-uncrustify                  0.12.15-1jammy.20260304.195907          amd64        The CMake API for ament_uncrustify to check code against styleconventions using uncrustify.
+ii  ros-humble-ament-cmake-version                     1.3.14-1jammy.20260226.010514           amd64        The ability to override the exported package version in the ament buildsystem.
+ii  ros-humble-ament-cmake-xmllint                     0.12.15-1jammy.20260304.200103          amd64        The CMake API for ament_xmllint to check XML file using xmmlint.
+ii  ros-humble-ament-copyright                         0.12.15-1jammy.20260226.034848          amd64        The ability to check source files for copyright and license information.
+ii  ros-humble-ament-cppcheck                          0.12.15-1jammy.20260226.010724          amd64        The ability to perform static code analysis on C/C++ code using Cppcheck and generate xUnit test result files.
+ii  ros-humble-ament-cpplint                           0.12.15-1jammy.20260304.090253          amd64        The ability to check code against the Google style conventions using cpplint and generate xUnit test result files.
+ii  ros-humble-ament-flake8                            0.12.15-1jammy.20260226.013519          amd64        The ability to check code for style and syntax conventions with flake8.
+ii  ros-humble-ament-index-cpp                         1.4.1-1jammy.20260304.201844            amd64        C++ API to access the ament resource index.
+ii  ros-humble-ament-index-python                      1.4.1-1jammy.20260304.090250            amd64        Python API to access the ament resource index.
+ii  ros-humble-ament-lint                              0.12.15-1jammy.20260226.005140          amd64        Providing common API for ament linter packages.
+ii  ros-humble-ament-lint-auto                         0.12.15-1jammy.20260226.014133          amd64        The auto-magic functions for ease to use of the ament linters in CMake.
+ii  ros-humble-ament-lint-cmake                        0.12.15-1jammy.20260304.090258          amd64        The ability to lint CMake code using cmakelint and generate xUnit test result files.
+ii  ros-humble-ament-lint-common                       0.12.15-1jammy.20260304.201149          amd64        The list of commonly used linters in the ament build system in CMake.
+ii  ros-humble-ament-package                           0.14.2-1jammy.20260213.215617           amd64        The parser for the manifest files in the ament buildsystem.
+ii  ros-humble-ament-pep257                            0.12.15-1jammy.20260226.014506          amd64        The ability to check code against the docstring style conventions in PEP 257 and generate xUnit test result files.
+ii  ros-humble-ament-uncrustify                        0.12.15-1jammy.20260304.195710          amd64        The ability to check code against style conventions using uncrustify and generate xUnit test result files.
+ii  ros-humble-ament-xmllint                           0.12.15-1jammy.20260304.090301          amd64        The ability to check XML files like the package manifest using xmllint and generate xUnit test result files.
+ii  ros-humble-angles                                  1.15.0-1jammy.20260304.075013           amd64        This package provides a set of simple math utilities to work with angles.
+ii  ros-humble-bond                                    4.1.4-1jammy.20260907.213713            amd64        A bond allows two processes, A and B, to know when the other has terminated, either cleanly or by crashing.
+ii  ros-humble-bondcpp                                 4.1.4-1jammy.20260907.235408            amd64        C++ implementation of bond, a mechanism for checking when another process has terminated.
+ii  ros-humble-builtin-interfaces                      1.2.3-1jammy.20260718.005731            amd64        A package containing message and service definitions for types defined in the OMG IDL Platform Specific Model.
+ii  ros-humble-camera-calibration                      3.0.9-1jammy.20260726.121649            amd64        camera_calibration allows easy calibration of monocular or stereo cameras using a checkerboard calibration target.
+ii  ros-humble-camera-calibration-parsers              3.1.13-1jammy.20260724.031210           amd64        camera_calibration_parsers contains routines for reading and writing camera calibration parameters.
+ii  ros-humble-camera-info-manager                     3.1.13-1jammy.20260726.110157           amd64        This package provides a C++ interface for camera calibration information.
+ii  ros-humble-class-loader                            2.2.0-3jammy.20260717.233651            amd64        The class_loader package is a ROS-independent package for loading plugins during runtime and the foundation of the higher level ROS &quot;pluginlib&quot; library.
+ii  ros-humble-common-interfaces                       4.9.2-1jammy.20260718.021859            amd64        common_interfaces contains messages and services that are widely used by other ROS packages.
+ii  ros-humble-composition                             0.20.9-1jammy.20260726.113925           amd64        Examples for composing multiple nodes in a single process.
+ii  ros-humble-composition-interfaces                  1.2.3-1jammy.20260718.021622            amd64        A package containing message and service definitions for managing composable nodes in a container process.
+ii  ros-humble-compressed-depth-image-transport        2.5.5-1jammy.20260726.133930            amd64        Compressed_depth_image_transport provides a plugin to image_transport for transparently sending depth images (raw, floating-point) using PNG compression.
+ii  ros-humble-compressed-image-transport              2.5.5-1jammy.20260726.133928            amd64        Compressed_image_transport provides a plugin to image_transport for transparently sending images encoded as JPEG or PNG.
+ii  ros-humble-console-bridge-vendor                   1.4.1-1jammy.20260304.202710            amd64        Wrapper around console_bridge, providing nothing but a dependency on console_bridge, on some systems.
+ii  ros-humble-cv-bridge                               3.2.1-1jammy.20260907.220118            amd64        This contains CvBridge, which converts between ROS2 Image messages and OpenCV images.
+ii  ros-humble-demo-nodes-cpp                          0.20.9-1jammy.20260726.113819           amd64        C++ nodes which were previously in the ros2/examples repository but are now just used for demo purposes.
+ii  ros-humble-demo-nodes-cpp-native                   0.20.9-1jammy.20260726.114521           amd64        C++ nodes which access the native handles of the rmw implementation.
+ii  ros-humble-demo-nodes-py                           0.20.9-1jammy.20260724.024758           amd64        Python nodes which were previously in the ros2/examples repository but are now just used for demo purposes.
+ii  ros-humble-depth-image-proc                        3.0.9-1jammy.20260806.105503            amd64        Contains components for processing depth images such as those produced by OpenNI camera.
+ii  ros-humble-depthimage-to-laserscan                 2.5.1-1jammy.20260726.115533            amd64        depthimage_to_laserscan
+ii  ros-humble-desktop                                 0.10.0-1jammy.20260804.223343           amd64        A package which extends 'ros_base' and includes high level packages like vizualization tools and demos.
+ii  ros-humble-desktop-full                            0.10.0-1jammy.20260806.125359           amd64        Provides a &quot;batteries included&quot; experience to novice users.
+ii  ros-humble-diagnostic-msgs                         4.9.2-1jammy.20260718.014152            amd64        A package containing some diagnostics related message and service definitions.
+ii  ros-humble-diagnostic-updater                      4.0.7-1jammy.20260724.032411            amd64        Update and publish diagnostic information.
+ii  ros-humble-domain-coordinator                      0.10.0-3jammy.20260304.090332           amd64        A tool to coordinate unique ROS_DOMAIN_IDs across multiple processes
+ii  ros-humble-dummy-map-server                        0.20.9-1jammy.20260724.031347           amd64        dummy map server node
+ii  ros-humble-dummy-robot-bringup                     0.20.9-1jammy.20260804.210020           amd64        dummy robot bringup
+ii  ros-humble-dummy-sensors                           0.20.9-1jammy.20260724.031410           amd64        dummy sensor nodes
+ii  ros-humble-eigen3-cmake-module                     0.1.1-4jammy.20260304.195907            amd64        Exports a custom CMake module to find Eigen3.
+ii  ros-humble-example-interfaces                      0.9.3-2jammy.20260718.011806            amd64        Contains message and service definitions used by the examples.
+ii  ros-humble-examples-rclcpp-minimal-action-client   0.15.5-1jammy.20260726.120959           amd64        Minimal action client examples
+ii  ros-humble-examples-rclcpp-minimal-action-server   0.15.5-1jammy.20260726.121012           amd64        Minimal action server examples
+ii  ros-humble-examples-rclcpp-minimal-client          0.15.5-1jammy.20260726.110233           amd64        Examples of minimal service clients
+ii  ros-humble-examples-rclcpp-minimal-composition     0.15.5-1jammy.20260728.072237           amd64        Minimalist examples of composing nodes in the same process
+ii  ros-humble-examples-rclcpp-minimal-publisher       0.15.5-1jammy.20260725.070212           amd64        Examples of minimal publisher nodes
+ii  ros-humble-examples-rclcpp-minimal-service         0.15.5-1jammy.20260726.110437           amd64        A minimal service server which adds two numbers
+ii  ros-humble-examples-rclcpp-minimal-subscriber      0.15.5-1jammy.20260726.115747           amd64        Examples of minimal subscribers
+ii  ros-humble-examples-rclcpp-minimal-timer           0.15.5-1jammy.20260726.110425           amd64        Examples of minimal nodes which have timers
+ii  ros-humble-examples-rclcpp-multithreaded-executor  0.15.5-1jammy.20260726.110340           amd64        Package containing example of how to implement a multithreaded executor
+ii  ros-humble-examples-rclpy-executors                0.15.5-1jammy.20260724.024815           amd64        Examples of creating and using exectors to run multiple nodes in the same process
+ii  ros-humble-examples-rclpy-minimal-action-client    0.15.5-1jammy.20260724.024842           amd64        Examples of minimal action clients using rclpy.
+ii  ros-humble-examples-rclpy-minimal-action-server    0.15.5-1jammy.20260724.024838           amd64        Examples of minimal action servers using rclpy.
+ii  ros-humble-examples-rclpy-minimal-client           0.15.5-1jammy.20260724.024838           amd64        Examples of minimal service clients using rclpy.
+ii  ros-humble-examples-rclpy-minimal-publisher        0.15.5-1jammy.20260724.025034           amd64        Examples of minimal publishers using rclpy.
+ii  ros-humble-examples-rclpy-minimal-service          0.15.5-1jammy.20260724.024915           amd64        Examples of minimal service servers using rclpy.
+ii  ros-humble-examples-rclpy-minimal-subscriber       0.15.5-1jammy.20260724.024923           amd64        Examples of minimal subscribers using rclpy.
+ii  ros-humble-fastcdr                                 1.0.29-1jammy.20260226.010952           amd64        CDR serialization implementation.
+ii  ros-humble-fastrtps                                2.6.12-1jammy.20260723.233918           amd64        *eprosima Fast DDS* (formerly Fast RTPS) is a C++ implementation of the DDS (Data Distribution Service) standard of the OMG (Object Management Group).
+ii  ros-humble-fastrtps-cmake-module                   2.2.4-1jammy.20260304.202011            amd64        Provide CMake module to find eProsima FastRTPS.
+ii  ros-humble-filters                                 2.2.2-1jammy.20260726.110558            amd64        This library provides a standardized interface for processing data as a sequence of filters.
+ii  ros-humble-foonathan-memory-vendor                 1.2.0-3jammy.20260304.200554            amd64        Foonathan/memory vendor package for Fast-RTPS.
+ii  ros-humble-geometry-msgs                           4.9.2-1jammy.20260718.012617            amd64        A package containing some geometry related message definitions.
+ii  ros-humble-geometry2                               0.25.22-1jammy.20260804.195606          amd64        A metapackage to bring in the default packages second generation Transform Library in ros, tf2.
+ii  ros-humble-gmock-vendor                            1.10.9006-1jammy.20260226.011659        amd64        The package provides GoogleMock.
+ii  ros-humble-gps-msgs                                3.1.0-1jammy.20260722.171224            amd64        GPS messages for use in GPS drivers
+ii  ros-humble-grid-map                                2.0.1-1jammy.20260908.104933            amd64        Meta-package for the universal grid map library.
+ii  ros-humble-grid-map-cmake-helpers                  2.0.1-1jammy.20260226.005052            amd64        CMake support functionality used throughout grid_map
+ii  ros-humble-grid-map-core                           2.0.1-1jammy.20260304.202024            amd64        Universal grid map library to manage two-dimensional grid maps with multiple data layers.
+ii  ros-humble-grid-map-costmap-2d                     2.0.1-1jammy.20260908.065800            amd64        Interface for grid maps to the costmap_2d format.
+ii  ros-humble-grid-map-cv                             2.0.1-1jammy.20260907.224219            amd64        Conversions between grid maps and OpenCV images.
+ii  ros-humble-grid-map-demos                          2.0.1-1jammy.20260908.102445            amd64        Demo nodes to demonstrate the usage of the grid map library.
+ii  ros-humble-grid-map-filters                        2.0.1-1jammy.20260908.094056            amd64        Processing grid maps as a sequence of ROS filters.
+ii  ros-humble-grid-map-loader                         2.0.1-1jammy.20260908.092429            amd64        Loading and publishing grid maps from bag files.
+ii  ros-humble-grid-map-msgs                           2.0.1-1jammy.20260907.223300            amd64        Definition of the multi-layered grid map message type.
+ii  ros-humble-grid-map-octomap                        2.0.1-1jammy.20260304.202434            amd64        Conversions between grid maps and OctoMap types.
+ii  ros-humble-grid-map-pcl                            2.0.1-1jammy.20260908.093114            amd64        Conversions between grid maps and Point Cloud Library (PCL) types.
+ii  ros-humble-grid-map-ros                            2.0.1-1jammy.20260908.091310            amd64        ROS interface for the grid map library to manage two-dimensional grid maps with multiple data layers.
+ii  ros-humble-grid-map-rviz-plugin                    2.0.1-1jammy.20260908.092708            amd64        RViz plugin for displaying grid map messages.
+ii  ros-humble-grid-map-sdf                            2.0.1-1jammy.20260304.202435            amd64        Generates signed distance fields from grid maps.
+ii  ros-humble-grid-map-visualization                  2.0.1-1jammy.20260908.092850            amd64        Configurable tool to visualize grid maps in RViz.
+ii  ros-humble-gtest-vendor                            1.10.9006-1jammy.20260226.011046        amd64        The package provides GoogleTest.
+ii  ros-humble-ignition-cmake2-vendor                  0.0.2-2jammy.20260304.200630            amd64        This package provides the Ignition CMake 2.x library.
+ii  ros-humble-ignition-math6-vendor                   0.0.2-2jammy.20260304.200852            amd64        This package provides the Ignition Math 6.x library.
+ii  ros-humble-image-common                            3.1.13-1jammy.20260726.122506           amd64        Common code for working with images in ROS.
+ii  ros-humble-image-geometry                          3.2.1-1jammy.20260718.023550            amd64        `image_geometry` contains C++ and Python libraries for interpreting images geometrically.
+ii  ros-humble-image-pipeline                          3.0.9-1jammy.20260806.113909            amd64        image_pipeline fills the gap between getting raw images from a camera driver and higher-level vision processing.
+ii  ros-humble-image-proc                              3.0.9-1jammy.20260726.122742            amd64        Single image rectification and color processing.
+ii  ros-humble-image-publisher                         3.0.9-1jammy.20260726.122518            amd64        Contains a node publish an image stream from single image file or avi motion file.
+ii  ros-humble-image-rotate                            3.0.9-1jammy.20260804.195645            amd64        Contains a node that rotates an image stream in a way that minimizes the angle between a vector in some arbitrary frame and a vector in the camera frame.
+ii  ros-humble-image-tools                             0.20.9-1jammy.20260726.114509           amd64        Tools to capture and play back images to and from DDS subscriptions and publications.
+ii  ros-humble-image-transport                         3.1.13-1jammy.20260907.224758           amd64        image_transport should always be used to subscribe to and publish images.
+ii  ros-humble-image-transport-plugins                 2.5.5-1jammy.20260908.011646            amd64        A set of plugins for publishing and subscribing to sensor_msgs/Image topics in representations other than raw pixel data.
+ii  ros-humble-image-view                              3.0.9-1jammy.20260726.122724            amd64        A simple viewer for ROS image topics.
+ii  ros-humble-interactive-markers                     2.3.2-2jammy.20260804.195618            amd64        3D interactive marker communication library for RViz and similar tools.
+ii  ros-humble-intra-process-demo                      0.20.9-1jammy.20260724.030642           amd64        Demonstrations of intra process communication.
+ii  ros-humble-joy                                     3.3.0-1jammy.20260726.115901            amd64        The joy package contains joy_node, a node that interfaces a generic joystick to ROS 2.
+ii  ros-humble-kdl-parser                              2.6.4-1jammy.20260718.021412            amd64        The Kinematics and Dynamics Library (KDL) defines a tree structure to represent the kinematic and dynamic parameters of a robot mechanism.
+ii  ros-humble-keyboard-handler                        0.0.5-1jammy.20260304.202120            amd64        Handler for input from keyboard
+ii  ros-humble-laser-filters                           2.0.9-1jammy.20260804.195604            amd64        Assorted filters designed to operate on 2D planar laser scanners, which use the sensor_msgs/LaserScan type.
+ii  ros-humble-laser-geometry                          2.4.1-1jammy.20260804.154922            amd64        This package contains a class for converting from a 2D laser scan as defined by sensor_msgs/LaserScan into a point cloud as defined by sensor_msgs/PointCloud or sensor_msgs/PointCloud2.
+ii  ros-humble-launch                                  1.0.14-1jammy.20260304.195519           amd64        The ROS launch tool.
+ii  ros-humble-launch-ros                              0.19.14-1jammy.20260724.025042          amd64        ROS specific extensions to the launch tool.
+ii  ros-humble-launch-testing                          1.0.14-1jammy.20260304.200104           amd64        A package to create tests which involve launch files and multiple processes.
+ii  ros-humble-launch-testing-ament-cmake              1.0.14-1jammy.20260304.202633           amd64        A package providing cmake functions for running launch tests from the build.
+ii  ros-humble-launch-testing-ros                      0.19.14-1jammy.20260724.025646          amd64        A package providing utilities for writing ROS2 enabled launch tests.
+ii  ros-humble-launch-xml                              1.0.14-1jammy.20260304.195726           amd64        XML frontend for the launch package.
+ii  ros-humble-launch-yaml                             1.0.14-1jammy.20260304.195728           amd64        YAML frontend for the launch package.
+ii  ros-humble-libcurl-vendor                          3.1.3-1jammy.20260304.090502            amd64        Wrapper around libcurl, it provides a fixed CMake module and an ExternalProject build of it.
+ii  ros-humble-libstatistics-collector                 1.3.4-1jammy.20260724.020507            amd64        Lightweight aggregation utilities to collect statistics and measure message metrics.
+ii  ros-humble-libyaml-vendor                          1.2.2-2jammy.20260717.233545            amd64        Vendored version of libyaml.
+ii  ros-humble-lifecycle                               0.20.9-1jammy.20260726.111223           amd64        Package containing demos for lifecycle implementation
+ii  ros-humble-lifecycle-msgs                          1.2.3-1jammy.20260718.005812            amd64        A package containing some lifecycle related message and service definitions.
+ii  ros-humble-logging-demo                            0.20.9-1jammy.20260726.114708           amd64        Examples for using and configuring loggers.
+ii  ros-humble-map-msgs                                2.1.0-3jammy.20260718.015830            amd64        This package defines messages commonly used in mapping packages.
+ii  ros-humble-message-filters                         4.3.19-1jammy.20260726.111837           amd64        A set of ROS2 message filters which take in messages and may output those messages at a later time, based on the conditions that filter needs met.
+ii  ros-humble-nav-msgs                                4.9.2-1jammy.20260718.014329            amd64        A package containing some navigation related message and service definitions.
+ii  ros-humble-nav2-common                             1.1.20-1jammy.20260907.215155           amd64        Common support functionality used throughout the navigation 2 stack
+ii  ros-humble-nav2-costmap-2d                         1.1.20-1jammy.20260908.002855           amd64        This package provides an implementation of a 2D costmap that takes in sensor data from the world, builds a 2D or 3D occupancy grid of the data (depending on whether a voxel based implementation is used), and inflates costs in a 2D costmap based on the occupancy grid and a user specified inflation radius.
+ii  ros-humble-nav2-msgs                               1.1.20-1jammy.20260907.223327           amd64        Messages and service files for the Nav2 stack
+ii  ros-humble-nav2-util                               1.1.20-1jammy.20260907.235813           amd64        TODO
+ii  ros-humble-nav2-voxel-grid                         1.1.20-1jammy.20260908.002526           amd64        voxel_grid provides an implementation of an efficient 3D voxel grid.
+ii  ros-humble-octomap                                 1.9.8-1jammy.20260226.005011            amd64        The OctoMap library implements a 3D occupancy grid mapping approach, providing data structures and mapping algorithms in C++.
+ii  ros-humble-octomap-msgs                            2.0.1-1jammy.20260907.212327            amd64        This package provides messages and serializations / conversion for the OctoMap library.
+ii  ros-humble-octomap-ros                             0.4.4-1jammy.20260907.215749            amd64        octomap_ros provides conversion functions between ROS and OctoMap's native types.
+ii  ros-humble-octomap-rviz-plugins                    2.1.1-1jammy.20260908.014612            amd64        A set of plugins for displaying occupancy information decoded from binary octomap messages.
+ii  ros-humble-octomap-server                          2.3.1-1jammy.20260908.012256            amd64        octomap_server loads a 3D map (as Octree-based OctoMap) and distributes it to other nodes in a compact binary format.
+ii  ros-humble-orocos-kdl-vendor                       0.2.5-1jammy.20260304.201339            amd64        Wrapper around orocos_kdl, providing nothing but a dependency on orocos_kdl on some systems.
+ii  ros-humble-osrf-pycommon                           2.1.6-1jammy.20260226.011505            amd64        Commonly needed Python modules, used by Python software developed at OSRF.
+ii  ros-humble-pcl-conversions                         2.4.5-2jammy.20260907.233725            amd64        Provides conversions from PCL data types and ROS message types
+ii  ros-humble-pcl-msgs                                1.0.0-7jammy.20260718.020111            amd64        Package containing PCL (Point Cloud Library)-related ROS messages.
+ii  ros-humble-pcl-ros                                 2.4.5-2jammy.20260908.000723            amd64        PCL (Point Cloud Library) ROS interface stack.
+ii  ros-humble-pendulum-control                        0.20.9-1jammy.20260726.123228           amd64        Demonstrates ROS 2's realtime capabilities with a simulated inverted pendulum.
+ii  ros-humble-pendulum-msgs                           0.20.9-1jammy.20260718.010605           amd64        Custom messages for real-time pendulum control.
+ii  ros-humble-perception                              0.10.0-1jammy.20260806.123927           amd64        A package which aggregates common perception packages.
+ii  ros-humble-perception-pcl                          2.4.5-2jammy.20260804.212114            amd64        PCL (Point Cloud Library) ROS interface stack.
+ii  ros-humble-pluginlib                               5.1.4-1jammy.20260717.234837            amd64        The pluginlib package provides tools for writing and dynamically loading plugins using the ROS build infrastructure.
+ii  ros-humble-pybind11-vendor                         2.4.2-1jammy.20260304.195023            amd64        Wrapper around pybind11.
+ii  ros-humble-python-cmake-module                     0.10.0-2jammy.20260304.202554           amd64        Provide CMake module with extra functionality for Python.
+ii  ros-humble-python-orocos-kdl-vendor                0.2.5-1jammy.20260304.202632            amd64        Wrapper around PyKDL, providing nothing but a dependency on PyKDL on some systems.
+ii  ros-humble-python-qt-binding                       1.1.3-1jammy.20260304.202555            amd64        This stack provides Python bindings for Qt.
+ii  ros-humble-qt-dotgraph                             2.2.5-1jammy.20260330.190918            amd64        qt_dotgraph provides helpers to work with dot graphs.
+ii  ros-humble-qt-gui                                  2.2.5-1jammy.20260330.190956            amd64        qt_gui provides the infrastructure for an integrated graphical user interface based on Qt.
+ii  ros-humble-qt-gui-cpp                              2.2.5-1jammy.20260718.005252            amd64        qt_gui_cpp provides the foundation for C++-bindings for qt_gui and creates bindings for every generator available.
+ii  ros-humble-qt-gui-py-common                        2.2.5-1jammy.20260330.190941            amd64        qt_gui_py_common provides common functionality for GUI plugins written in Python.
+ii  ros-humble-quality-of-service-demo-cpp             0.20.9-1jammy.20260726.114130           amd64        C++ Demo applications for Quality of Service features
+ii  ros-humble-quality-of-service-demo-py              0.20.9-1jammy.20260724.025128           amd64        Python Demo applications for Quality of Service features
+ii  ros-humble-rcl                                     5.3.13-1jammy.20260724.003904           amd64        The ROS client library common implementation.
+ii  ros-humble-rcl-action                              5.3.13-1jammy.20260724.021048           amd64        Package containing a C-based ROS action implementation
+ii  ros-humble-rcl-interfaces                          1.2.3-1jammy.20260718.010613            amd64        The ROS client library common interfaces.
+ii  ros-humble-rcl-lifecycle                           5.3.13-1jammy.20260724.020529           amd64        Package containing a C-based lifecycle implementation
+ii  ros-humble-rcl-logging-interface                   2.3.2-1jammy.20260717.233548            amd64        Interface that rcl_logging backends needs to implement.
+ii  ros-humble-rcl-logging-spdlog                      2.3.2-1jammy.20260717.234845            amd64        Implementation of rcl_logging API for an spdlog backend.
+ii  ros-humble-rcl-yaml-param-parser                   5.3.13-1jammy.20260717.234751           amd64        Parse a YAML parameter file and populate the C data structure.
+ii  ros-humble-rclcpp                                  16.0.19-1jammy.20260724.021311          amd64        The ROS client library in C++.
+ii  ros-humble-rclcpp-action                           16.0.19-1jammy.20260726.112254          amd64        Adds action APIs for C++.
+ii  ros-humble-rclcpp-components                       16.0.19-1jammy.20260726.112306          amd64        Package containing tools for dynamically loadable components
+ii  ros-humble-rclcpp-lifecycle                        16.0.19-1jammy.20260724.031557          amd64        Package containing a prototype for lifecycle implementation
+ii  ros-humble-rclpy                                   3.3.21-1jammy.20260724.022150           amd64        Package containing the Python client.
+ii  ros-humble-rcpputils                               2.4.7-1jammy.20260717.060655            amd64        Package containing utility code for C++.
+ii  ros-humble-rcutils                                 5.1.9-1jammy.20260716.060637            amd64        Package containing various utility types and functions for C
+ii  ros-humble-resource-retriever                      3.1.3-1jammy.20260304.202624            amd64        This package retrieves data from url-format files such as http://, ftp://, package:// file://, etc., and loads the data into memory.
+ii  ros-humble-rmw                                     6.1.3-1jammy.20260716.100059            amd64        Contains the ROS middleware API.
+ii  ros-humble-rmw-dds-common                          1.6.0-2jammy.20260718.001401            amd64        Define a common interface between DDS implementations of ROS middleware.
+ii  ros-humble-rmw-fastrtps-cpp                        6.2.10-1jammy.20260724.002510           amd64        Implement the ROS middleware interface using eProsima FastRTPS static code generation in C++.
+ii  ros-humble-rmw-fastrtps-shared-cpp                 6.2.10-1jammy.20260724.000641           amd64        Code shared on static and dynamic type support of rmw_fastrtps_cpp.
+ii  ros-humble-rmw-implementation                      2.8.5-1jammy.20260724.003446            amd64        Proxy implementation of the ROS 2 Middleware Interface.
+ii  ros-humble-rmw-implementation-cmake                6.1.3-1jammy.20260716.060509            amd64        CMake functions which can discover and enumerate available implementations.
+ii  ros-humble-robot-state-publisher                   3.0.3-2jammy.20260907.225951            amd64        This package take the joint angles of a robot as input, and publishes the 3D poses of the robot links to tf2, using a kinematic tree model of the robot.
+ii  ros-humble-ros-base                                0.10.0-1jammy.20260804.204550           amd64        A package which extends 'ros_core' and includes other basic functionalities like tf2 and urdf.
+ii  ros-humble-ros-core                                0.10.0-1jammy.20260726.123022           amd64        A package to aggregate the packages required to use publish / subscribe, services, generate messages and other core ROS concepts.
+ii  ros-humble-ros-environment                         3.2.2-1jammy.20260226.005101            amd64        The package provides the environment variables `ROS_VERSION` and `ROS_DISTRO`.
+ii  ros-humble-ros-gz-bridge                           0.244.25-1jammy.20260729.042716         amd64        Bridge communication between ROS and Gazebo Transport
+ii  ros-humble-ros-gz-image                            0.244.25-1jammy.20260729.050239         amd64        Image utilities for Gazebo simulation with ROS.
+ii  ros-humble-ros-gz-interfaces                       0.244.25-1jammy.20260718.014341         amd64        Message and service data structures for interacting with Gazebo from ROS2.
+ii  ros-humble-ros-gz-sim                              0.244.25-1jammy.20260726.122251         amd64        Tools for using Gazebo Sim simulation with ROS.
+ii  ros-humble-ros-gz-sim-demos                        0.244.25-1jammy.20260804.223455         amd64        Demos using Gazebo Sim simulation with ROS.
+ii  ros-humble-ros-ign-bridge                          0.244.25-1jammy.20260729.050424         amd64        Shim package to redirect to ros_gz_bridge.
+ii  ros-humble-ros-ign-gazebo                          0.244.25-1jammy.20260726.134659         amd64        Shim package to redirect to ros_gz_sim.
+ii  ros-humble-ros-ign-gazebo-demos                    0.244.25-1jammy.20260804.223913         amd64        Shim package to redirect to ros_gz_sim_demos.
+ii  ros-humble-ros-ign-image                           0.244.25-1jammy.20260729.050525         amd64        Shim package to redirect to ros_gz_image.
+ii  ros-humble-ros-ign-interfaces                      0.244.25-1jammy.20260718.015048         amd64        Shim package to redirect to ros_gz_interfaces.
+ii  ros-humble-ros-workspace                           1.0.2-2jammy.20260224.185744            amd64        Provides the prefix level environment files for ROS 2 packages.
+ii  ros-humble-ros2action                              0.18.19-1jammy.20260724.030032          amd64        The action command for ROS 2 command line tools.
+ii  ros-humble-ros2bag                                 0.15.16-1jammy.20260726.134553          amd64        Entry point for rosbag in ROS 2
+ii  ros-humble-ros2cli                                 0.18.19-1jammy.20260724.025302          amd64        Framework for ROS 2 command line tools.
+ii  ros-humble-ros2cli-common-extensions               0.1.2-1jammy.20260726.122808            amd64        Meta package for ros2cli common extensions
+ii  ros-humble-ros2component                           0.18.19-1jammy.20260726.114744          amd64        The component command for ROS 2 command line tools.
+ii  ros-humble-ros2doctor                              0.18.19-1jammy.20260724.030215          amd64        A command line tool to check potential issues in a ROS 2 system
+ii  ros-humble-ros2interface                           0.18.19-1jammy.20260726.112728          amd64        The interface command for ROS 2 command line tools
+ii  ros-humble-ros2launch                              0.19.14-1jammy.20260726.121957          amd64        The launch command for ROS 2 command line tools.
+ii  ros-humble-ros2lifecycle                           0.18.19-1jammy.20260724.033013          amd64        The lifecycle command for ROS 2 command line tools.
+ii  ros-humble-ros2multicast                           0.18.19-1jammy.20260724.025729          amd64        The multicast command for ROS 2 command line tools.
+ii  ros-humble-ros2node                                0.18.19-1jammy.20260724.030156          amd64        The node command for ROS 2 command line tools.
+ii  ros-humble-ros2param                               0.18.19-1jammy.20260724.030538          amd64        The param command for ROS 2 command line tools.
+ii  ros-humble-ros2pkg                                 0.18.19-1jammy.20260726.112725          amd64        The pkg command for ROS 2 command line tools.
+ii  ros-humble-ros2plugin                              5.1.4-1jammy.20260726.122010            amd64        The plugin command for ROS 2 command line tools.
+ii  ros-humble-ros2run                                 0.18.19-1jammy.20260726.122057          amd64        The run command for ROS 2 command line tools.
+ii  ros-humble-ros2service                             0.18.19-1jammy.20260724.030235          amd64        The service command for ROS 2 command line tools.
+ii  ros-humble-ros2topic                               0.18.19-1jammy.20260726.112803          amd64        The topic command for ROS 2 command line tools.
+ii  ros-humble-rosbag2                                 0.15.16-1jammy.20260726.135454          amd64        Meta package for rosbag2 related packages
+ii  ros-humble-rosbag2-compression                     0.15.16-1jammy.20260726.130318          amd64        Compression implementations for rosbag2 bags and messages.
+ii  ros-humble-rosbag2-compression-zstd                0.15.16-1jammy.20260726.130828          amd64        Zstandard compression library implementation of rosbag2_compression
+ii  ros-humble-rosbag2-cpp                             0.15.16-1jammy.20260726.123559          amd64        C++ ROSBag2 client library
+ii  ros-humble-rosbag2-interfaces                      0.15.16-1jammy.20260718.010834          amd64        Interface definitions for controlling rosbag2
+ii  ros-humble-rosbag2-py                              0.15.16-1jammy.20260726.134021          amd64        Python API for rosbag2
+ii  ros-humble-rosbag2-storage                         0.15.16-1jammy.20260726.122141          amd64        ROS2 independent storage format to store serialized ROS2 messages
+ii  ros-humble-rosbag2-storage-default-plugins         0.15.16-1jammy.20260726.122936          amd64        ROSBag2 SQLite3 storage plugin
+ii  ros-humble-rosbag2-transport                       0.15.16-1jammy.20260726.131107          amd64        Layer encapsulating ROS middleware to allow rosbag2 to be used with or without middleware
+ii  ros-humble-rosgraph-msgs                           1.2.3-1jammy.20260718.011206            amd64        Messages relating to the ROS Computation Graph.
+ii  ros-humble-rosidl-adapter                          3.1.9-1jammy.20260605.103907            amd64        API and scripts to parse .msg/.srv/.action files and convert them to .idl.
+ii  ros-humble-rosidl-cli                              3.1.9-1jammy.20260605.103654            amd64        Command line tools for ROS interface generation.
+ii  ros-humble-rosidl-cmake                            3.1.9-1jammy.20260605.104545            amd64        The CMake functionality to invoke code generation for ROS interface files.
+ii  ros-humble-rosidl-default-generators               1.2.1-1jammy.20260718.000113            amd64        A configuration package defining the default ROS interface generators.
+ii  ros-humble-rosidl-default-runtime                  1.2.1-1jammy.20260718.000013            amd64        A configuration package defining the runtime for the ROS interfaces.
+ii  ros-humble-rosidl-generator-c                      3.1.9-1jammy.20260716.100325            amd64        Generate the ROS interfaces in C.
+ii  ros-humble-rosidl-generator-cpp                    3.1.9-1jammy.20260717.233559            amd64        Generate the ROS interfaces in C++.
+ii  ros-humble-rosidl-generator-py                     0.14.6-1jammy.20260717.235155           amd64        Generate the ROS interfaces in Python.
+ii  ros-humble-rosidl-generator-rs                     0.4.12-1jammy.20260717.234619           amd64        Generate the ROS interfaces in Rust.
+ii  ros-humble-rosidl-parser                           3.1.9-1jammy.20260605.104513            amd64        The parser for `.idl` ROS interface files.
+ii  ros-humble-rosidl-runtime-c                        3.1.9-1jammy.20260716.095316            amd64        Provides definitions, initialization and finalization functions, and macros for getting and working with rosidl typesupport types in C.
+ii  ros-humble-rosidl-runtime-cpp                      3.1.9-1jammy.20260717.060829            amd64        Provides definitions and templated functions for getting and working with rosidl typesupport types in C++.
+ii  ros-humble-rosidl-runtime-py                       0.9.3-1jammy.20260718.012837            amd64        Runtime utilities for working with generated ROS interfaces in Python.
+ii  ros-humble-rosidl-typesupport-c                    2.0.2-1jammy.20260717.233513            amd64        Generate the type support for C messages.
+ii  ros-humble-rosidl-typesupport-cpp                  2.0.2-1jammy.20260717.234335            amd64        Generate the type support for C++ messages.
+ii  ros-humble-rosidl-typesupport-fastrtps-c           2.2.4-1jammy.20260717.234832            amd64        Generate the C interfaces for eProsima FastRTPS.
+ii  ros-humble-rosidl-typesupport-fastrtps-cpp         2.2.4-1jammy.20260717.234411            amd64        Generate the C++ interfaces for eProsima FastRTPS.
+ii  ros-humble-rosidl-typesupport-interface            3.1.9-1jammy.20260605.103839            amd64        The interface for rosidl typesupport packages.
+ii  ros-humble-rosidl-typesupport-introspection-c      3.1.9-1jammy.20260716.100023            amd64        Generate the message type support for dynamic message construction in C.
+ii  ros-humble-rosidl-typesupport-introspection-cpp    3.1.9-1jammy.20260717.233854            amd64        Generate the message type support for dynamic message construction in C++.
+ii  ros-humble-rpyutils                                0.2.2-1jammy.20260304.195455            amd64        Package containing various utility types and functions for Python
+ii  ros-humble-rqt-action                              2.0.1-3jammy.20260724.030551            amd64        rqt_action provides a feature to introspect all available ROS action types.
+ii  ros-humble-rqt-bag                                 1.1.6-1jammy.20260726.141545            amd64        rqt_bag provides a GUI plugin for displaying and replaying ROS bag files.
+ii  ros-humble-rqt-bag-plugins                         1.1.6-1jammy.20260726.141809            amd64        rqt_bag provides a GUI plugin for displaying and replaying ROS bag files.
+ii  ros-humble-rqt-common-plugins                      1.2.0-1jammy.20260726.141857            amd64        rqt_common_plugins metapackage provides ROS backend graphical tools suite that can be used on/off of robot runtime.
+ii  ros-humble-rqt-console                             2.0.3-1jammy.20260724.030104            amd64        rqt_console provides a GUI plugin for displaying and filtering ROS messages.
+ii  ros-humble-rqt-graph                               1.3.2-1jammy.20260724.030329            amd64        rqt_graph provides a GUI plugin for visualizing the ROS computation graph.
+ii  ros-humble-rqt-gui                                 1.1.9-1jammy.20260724.025250            amd64        rqt_gui provides the main to start an instance of the ROS integrated graphical user interface provided by qt_gui.
+ii  ros-humble-rqt-gui-cpp                             1.1.9-1jammy.20260726.112827            amd64        rqt_gui_cpp enables GUI plugins to use the C++ client library for ROS.
+ii  ros-humble-rqt-gui-py                              1.1.9-1jammy.20260724.025620            amd64        rqt_gui_py enables GUI plugins to use the Python client library for ROS.
+ii  ros-humble-rqt-image-view                          1.2.0-2jammy.20260726.123237            amd64        rqt_image_view provides a GUI plugin for displaying images using image_transport.
+ii  ros-humble-rqt-msg                                 1.2.1-1jammy.20260724.030243            amd64        A Python GUI plugin for introspecting available ROS message types.
+ii  ros-humble-rqt-plot                                1.1.5-1jammy.20260724.030150            amd64        rqt_plot provides a GUI plugin visualizing numeric values in a 2D plot using different plotting backends.
+ii  ros-humble-rqt-publisher                           1.5.0-1jammy.20260726.112838            amd64        rqt_publisher provides a GUI plugin for publishing arbitrary messages with fixed or computed field values.
+ii  ros-humble-rqt-py-common                           1.1.9-1jammy.20260724.025246            amd64        rqt_py_common provides common functionality for rqt plugins written in Python.
+ii  ros-humble-rqt-py-console                          1.0.2-3jammy.20260724.030235            amd64        rqt_py_console is a Python GUI plugin providing an interactive Python console.
+ii  ros-humble-rqt-reconfigure                         1.1.4-1jammy.20260724.030142            amd64        This rqt plugin provides a way to view and edit parameters on nodes.
+ii  ros-humble-rqt-service-caller                      1.0.5-3jammy.20260724.030641            amd64        rqt_service_caller provides a GUI plugin for calling arbitrary services.
+ii  ros-humble-rqt-shell                               1.0.2-3jammy.20260724.030617            amd64        rqt_shell is a Python GUI plugin providing an interactive shell.
+ii  ros-humble-rqt-srv                                 1.0.3-3jammy.20260724.030559            amd64        A Python GUI plugin for introspecting available ROS message types.
+ii  ros-humble-rqt-topic                               1.5.1-1jammy.20260724.030408            amd64        rqt_topic provides a GUI plugin for displaying debug information about ROS topics including publishers, subscribers, publishing rate, and ROS Messages.
+ii  ros-humble-rttest                                  0.13.0-2jammy.20260304.202749           amd64        Instrumentation library for real-time performance testing
+ii  ros-humble-rviz-assimp-vendor                      11.2.28-1jammy.20260714.150848          amd64        Wrapper around assimp, providing nothing but a dependency on assimp, on some systems.
+ii  ros-humble-rviz-common                             11.2.28-1jammy.20260804.200122          amd64        Common rviz API, used by rviz plugins and applications.
+ii  ros-humble-rviz-default-plugins                    11.2.28-1jammy.20260804.212519          amd64        Several default plugins for rviz to cover the basic functionality.
+ii  ros-humble-rviz-ogre-vendor                        11.2.28-1jammy.20260714.150851          amd64        Wrapper around ogre3d, it provides a fixed CMake module and an ExternalProject build of ogre.
+ii  ros-humble-rviz-rendering                          11.2.28-1jammy.20260715.012257          amd64        Library which provides the 3D rendering functionality in rviz.
+ii  ros-humble-rviz2                                   11.2.29-1jammy.20260908.014614          amd64        3D visualization tool for ROS.
+ii  ros-humble-sdformat-urdf                           1.0.1-1jammy.20260718.021325            amd64        URDF plugin to parse SDFormat XML into URDF C++ DOM objects.
+ii  ros-humble-sdl2-vendor                             3.3.0-1jammy.20260304.195240            amd64        Vendor library for SDL2.
+ii  ros-humble-sensor-msgs                             4.9.2-1jammy.20260718.014433            amd64        A package containing some sensor data related message and service definitions.
+ii  ros-humble-sensor-msgs-py                          4.9.2-1jammy.20260718.023551            amd64        A package for easy creation and reading of PointCloud2 messages in Python.
+ii  ros-humble-shape-msgs                              4.9.2-1jammy.20260718.015101            amd64        A package containing some message definitions which describe geometric shapes.
+ii  ros-humble-shared-queues-vendor                    0.15.16-1jammy.20260304.075306          amd64        Vendor package for concurrent queues from moodycamel
+ii  ros-humble-simulation                              0.10.0-1jammy.20260804.212332           amd64        A package which extends 'ros_base' and includes simulation packages.
+ii  ros-humble-smclib                                  4.1.4-1jammy.20260317.155122            amd64        The State Machine Compiler (SMC) from http://smc.sourceforge.net/ converts a language-independent description of a state machine into the source code to support that state machine.
+ii  ros-humble-spdlog-vendor                           1.3.1-1jammy.20260304.202915            amd64        Wrapper around spdlog, providing nothing but a dependency on spdlog, on some systems.
+ii  ros-humble-sqlite3-vendor                          0.15.16-1jammy.20260304.195038          amd64        SQLite 3 vendor package
+ii  ros-humble-sros2                                   0.10.9-1jammy.20260724.030847           amd64        Command line tools for managing SROS2 keys
+ii  ros-humble-sros2-cmake                             0.10.9-1jammy.20260724.031139           amd64        CMake macros to configure security
+ii  ros-humble-statistics-msgs                         1.2.3-1jammy.20260718.011154            amd64        Message definitions for reporting statistics for topics and system resources.
+ii  ros-humble-std-msgs                                4.9.2-1jammy.20260718.010840            amd64        A package containing some standard message definitions.
+ii  ros-humble-std-srvs                                4.9.2-1jammy.20260718.011109            amd64        A package containing some standard service definitions.
+ii  ros-humble-stereo-image-proc                       3.0.9-1jammy.20260726.123850            amd64        Stereo and single image rectification and disparity processing.
+ii  ros-humble-stereo-msgs                             4.9.2-1jammy.20260718.020132            amd64        A package containing some stereo camera related message definitions.
+ii  ros-humble-tango-icons-vendor                      0.1.1-3jammy.20260304.202920            amd64        tango_icons_vendor provides the public domain Tango icons for non-linux systems (Tango Icon Library) from the Tango Desktop Project
+ii  ros-humble-teleop-twist-joy                        2.4.8-1jammy.20260726.121144            amd64        Generic joystick teleop for twist robots.
+ii  ros-humble-teleop-twist-keyboard                   2.4.1-1jammy.20260724.025324            amd64        A robot-agnostic teleoperation node to convert keyboard commands to Twist messages.
+ii  ros-humble-tf2                                     0.25.23-1jammy.20260907.213559          amd64        tf2 is the second generation of the transform library, which lets the user keep track of multiple coordinate frames over time.
+ii  ros-humble-tf2-bullet                              0.25.22-1jammy.20260804.194912          amd64        tf2_bullet
+ii  ros-humble-tf2-eigen                               0.25.22-1jammy.20260804.194912          amd64        tf2_eigen
+ii  ros-humble-tf2-eigen-kdl                           0.25.22-1jammy.20260804.161619          amd64        Conversion functions between: - Eigen and KDL
+ii  ros-humble-tf2-geometry-msgs                       0.25.22-1jammy.20260804.194827          amd64        tf2_geometry_msgs
+ii  ros-humble-tf2-kdl                                 0.25.22-1jammy.20260804.194856          amd64        KDL binding for tf2
+ii  ros-humble-tf2-msgs                                0.25.22-1jammy.20260729.042019          amd64        tf2_msgs
+ii  ros-humble-tf2-py                                  0.25.22-1jammy.20260804.155238          amd64        The tf2_py package
+ii  ros-humble-tf2-ros                                 0.25.22-1jammy.20260804.155840          amd64        This package contains the C++ ROS bindings for the tf2 library
+ii  ros-humble-tf2-ros-py                              0.25.22-1jammy.20260804.161624          amd64        This package contains the ROS Python bindings for the tf2 library
+ii  ros-humble-tf2-sensor-msgs                         0.25.22-1jammy.20260804.194831          amd64        Small lib to transform sensor_msgs with tf.
+ii  ros-humble-tf2-tools                               0.25.22-1jammy.20260804.195304          amd64        tf2_tools
+ii  ros-humble-theora-image-transport                  2.5.5-1jammy.20260726.133929            amd64        Theora_image_transport provides a plugin to image_transport for transparently sending an image stream encoded with the Theora codec.
+ii  ros-humble-tinyxml-vendor                          0.8.3-2jammy.20260304.195406            amd64        CMake shim over the tinxml library.
+ii  ros-humble-tinyxml2-vendor                         0.7.7-1jammy.20260304.195411            amd64        Wrapper around tinyxml2, providing nothing but a dependency on tinyxml2, on some systems.
+ii  ros-humble-tlsf                                    0.7.0-2jammy.20260304.202930            amd64        TLSF allocator version 2.4.6
+ii  ros-humble-tlsf-cpp                                0.13.0-2jammy.20260726.113040           amd64        C++ stdlib-compatible wrapper around tlsf allocator and ROS2 examples
+ii  ros-humble-topic-monitor                           0.20.9-1jammy.20260724.025328           amd64        Package containing tools for monitoring ROS 2 topics.
+ii  ros-humble-tracetools                              4.1.2-1jammy.20260304.201640            amd64        Tracing wrapper for ROS 2.
+ii  ros-humble-tracetools-image-pipeline               3.0.9-1jammy.20260304.201708            amd64        LTTng tracing provider wrapper for image_pipeline ROS 2 meta-package.
+ii  ros-humble-trajectory-msgs                         4.9.2-1jammy.20260718.015114            amd64        A package containing some robot trajectory message definitions.
+ii  ros-humble-turtlesim                               1.4.3-1jammy.20260726.121530            amd64        turtlesim is a tool made for teaching ROS and ROS packages.
+ii  ros-humble-uncrustify-vendor                       2.0.2-2jammy.20260304.195304            amd64        Wrapper around uncrustify, providing nothing but a dependency on uncrustify, on some systems.
+ii  ros-humble-unique-identifier-msgs                  2.2.1-3jammy.20260718.011116            amd64        ROS messages for universally unique identifiers.
+ii  ros-humble-urdf                                    2.6.1-1jammy.20260718.005320            amd64        This package contains a C++ parser for the Unified Robot Description Format (URDF), which is an XML format for representing a robot model.
+ii  ros-humble-urdf-parser-plugin                      2.6.1-1jammy.20260304.201738            amd64        This package contains a C++ base class for URDF parsers.
+ii  ros-humble-urdfdom                                 3.0.2-2jammy.20260304.202852            amd64        A library to access URDFs using the DOM model.
+ii  ros-humble-urdfdom-headers                         1.0.6-2jammy.20260226.012553            amd64        C++ headers for URDF.
+ii  ros-humble-vision-msgs                             4.1.1-1jammy.20260718.015105            amd64        Messages for interfacing with various computer vision pipelines, such as object detectors.
+ii  ros-humble-vision-opencv                           3.2.1-1jammy.20260718.025920            amd64        Packages for interfacing ROS2 with OpenCV, a library of programming functions for real time computer vision.
+ii  ros-humble-visualization-msgs                      4.9.2-1jammy.20260718.020205            amd64        A package containing some visualization and interaction related message definitions.
+ii  ros-humble-xacro                                   2.1.1-1jammy.20260304.195513            amd64        Xacro (XML Macros) Xacro is an XML macro language.
+ii  ros-humble-yaml-cpp-vendor                         8.0.2-1jammy.20260304.195332            amd64        Wrapper around yaml-cpp, it provides a fixed CMake module and an ExternalProject build of it.
+ii  ros-humble-zstd-vendor                             0.15.16-1jammy.20260304.195400          amd64        Zstd compression vendor package, providing a dependency for Zstd.
+ii  vtk9                                               9.1.0+really9.1.0+dfsg2-3build1         amd64        Binaries for VTK9

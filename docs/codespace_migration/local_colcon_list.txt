@@ -1,0 +1,8 @@
+==============FAST-LIO ROS2 Docker Env Ready================
+gtsam	src/SuperOdom/ros2_humble_docker/sodom_deps/gtsam	(ros.cmake)
+livox_ros_driver2	src/SuperOdom/livox_ros_driver2	(ros.ament_cmake)
+livox_sdk2	src/SuperOdom/ros2_humble_docker/sodom_deps/Livox-SDK2	(cmake)
+sophus	src/SuperOdom/ros2_humble_docker/sodom_deps/Sophus	(ros.cmake)
+super_odometry	src/SuperOdom/super_odometry	(ros.ament_cmake)
+super_odometry_msgs	src/SuperOdom/super_odometry_msgs	(ros.ament_cmake)
+super_odometry_vio	src/SuperOdom/super_odometry_vio	(ros.ament_cmake)

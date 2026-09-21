@@ -1,0 +1,58 @@
+位于分支 feat/phase4b2a-parity-reconcile
+您的分支与上游分支 'origin/feat/phase4b2a-parity-reconcile' 一致。
+
+未跟踪的文件:
+  （使用 "git add <文件>..." 以包含要提交的内容）
+	PHASE_4B1_R4.diff
+	PHASE_4B1_R41_MASTER_AUDIT.patch
+	PHASE_4B1_R4_FULL.patch
+	debug_outoforder.py
+	docs/PHASE_4B1_R4_INDEPENDENT_REVIEW.md
+	docs/audit/phase4b1_r41/
+	docs/audit/phase4b2/PHASE_4B2_DELIVERY_1.md
+	fix_anchorgap.py
+	fix_anchorgap2.py
+	fix_anchorgap3.py
+	fix_anchorgap4.py
+	fix_anchorgap5.py
+	fix_anchorgap6.py
+	fix_closer.py
+	fix_equality.py
+	fix_outoforder.py
+	fix_permutation.py
+	fix_permutation2.py
+	fix_remaining.py
+	fix_remaining_7.py
+	fix_remaining_8.py
+	fix_remaining_9.py
+	fix_test.py
+	fix_toolate.py
+	fix_toolaterejected.py
+	make_zip.sh
+	patch_more_tests.py
+	patch_more_tests2.py
+	patch_more_tests3.py
+	patch_more_tests4.py
+	patch_more_tests5.py
+	patch_more_tests6.py
+	patch_more_tests7.py
+	patch_more_tests8.py
+	patch_test.py
+	patch_test.sh
+	patch_tests_fixes.py
+	patch_tests_horizon.py
+	patch_tests_r41.py
+	patch_tests_r42.py
+	patch_tests_shadow.py
+	patch_tracer.py
+	patch_tracer_init.py
+	patches/
+	phase4b2_parity_tracer.zip
+	phase4b2_parity_tracer/
+	print_lio_buf.py
+	remove_debug.py
+	tests.txt
+	tools/run_phase4b1_r41_gate.sh
+	tools/run_phase4b1_r42_gate.sh
+
+提交为空，但是存在尚未跟踪的文件（使用 "git add" 建立跟踪）

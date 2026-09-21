@@ -1,0 +1,4 @@
+origin	https://github.com/pyy52/SuperOdom.git (fetch)
+origin	https://github.com/pyy52/SuperOdom.git (push)
+upstream	https://github.com/superxslam/SuperOdom.git (fetch)
+upstream	https://github.com/superxslam/SuperOdom.git (push)
