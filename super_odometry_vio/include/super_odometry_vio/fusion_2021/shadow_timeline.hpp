@@ -21,6 +21,7 @@
 //    are dropped and counted.
 #pragma once
 
+#include "super_odometry_vio/fusion_2021/shadow_parity_tracer.hpp"
 #include <deque>
 #include <map>
 #include <set>
@@ -49,6 +50,7 @@ struct ShadowConfig
     std::string graph_retention_mode{"unbounded_shadow"};
     int64_t max_imu_dt_ns{50000000ll};         // malformed interval drop bound
     int64_t max_interpolation_gap_ns{150000000ll};
+    std::string parity_trace_file{""};
     int64_t source_reorder_horizon_ns{100000000ll};
     // LIO relative-factor nominal noise (Pose3 tangent: rot first, then trans)
     double lio_sigma_rot_rad{0.02};
@@ -246,6 +248,7 @@ class ShadowTimeline
 
     ShadowConfig config_;
     std::shared_ptr<gtsam::PreintegrationParams> imu_params_;
+    std::shared_ptr<ParityTracer> parity_tracer_;
     ShadowDiag diag_;
 
     std::deque<ImuSample> imu_buf_;  // time-ordered; out-of-order dropped

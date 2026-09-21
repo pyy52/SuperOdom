@@ -43,6 +43,9 @@ ShadowTimeline::ShadowTimeline(
     // hand-rolled marginalization (deleting variables != marginalizing).
     gtsam::ISAM2Params params;
     isam2_ = gtsam::ISAM2(params);
+    if (!config_.parity_trace_file.empty()) {
+        parity_tracer_ = std::make_shared<ParityTracer>(config_.parity_trace_file);
+    }
 }
 
 void ShadowTimeline::feedImu(int64_t stamp_ns, const gtsam::Vector3& acc,
@@ -103,6 +106,10 @@ void ShadowTimeline::createAnchorIfNeeded(int64_t imu_stamp_ns)
     {
         const int k_new = static_cast<int>(anchor_stamps_.size());
         anchor_stamps_.push_back(t0_ns_ + static_cast<int64_t>(k_new) * dt_a);
+        if (parity_tracer_) {
+            parity_tracer_->write("TIMELINE_ANCHOR_OPEN", t0_ns_ + static_cast<int64_t>(k_new) * dt_a, k_new, "IMU", 0, 
+                "{\"t_k\":" + std::to_string(t0_ns_ + static_cast<int64_t>(k_new) * dt_a) + ",\"anchor_status\":\"GRAPH_INSERTED\",\"fusion_segment_status\":\"ACTIVE\"}");
+        }
         anchor_T_W_B_.push_back(gtsam::Pose3());  // replaced by interval solve
         gtsam::Vector3 zero_vel;
         zero_vel.setZero();
@@ -181,6 +188,10 @@ void ShadowTimeline::closeInterval(int k)
         return;
     }
     ++diag_.intervals_closed;
+    if (parity_tracer_) {
+        parity_tracer_->write("TIMELINE_ANCHOR_CLOSE", anchor_stamps_[k], k, "IMU", 0, 
+            "{\"t_k\":" + std::to_string(anchor_stamps_[k]) + ",\"anchor_status\":\"GRAPH_INSERTED\",\"fusion_segment_status\":\"ACTIVE\"}");
+    }
 
     // Initial values for the new anchor by IMU prediction.
     const gtsam::NavState prev(anchor_T_W_B_[k], anchor_v_W_[k]);
@@ -217,6 +228,17 @@ void ShadowTimeline::flushOptimizer()
     graph_.resize(0);
     values_.clear();
     graph_dirty_ = false;
+    if (parity_tracer_) {
+        for (size_t k = 0; k < anchor_stamps_.size(); ++k) {
+            if (anchor_status_[k] == AnchorStatus::SOLVED) {
+                gtsam::Pose3 T = anchor_T_W_B_[k];
+                gtsam::Vector3 v = anchor_v_W_[k];
+                gtsam::imuBias::ConstantBias b = anchor_bias_[k];
+                parity_tracer_->write("STATE_SNAPSHOT", anchor_stamps_[k], k, "SYSTEM", 0, 
+                    "{\"T_W_B\":" + ParityTracer::poseToJson(T) + ",\"v_W\":" + ParityTracer::vec3ToJson(v) + ",\"bias_acc\":" + ParityTracer::vec3ToJson(b.accelerometer()) + ",\"bias_gyro\":" + ParityTracer::vec3ToJson(b.gyroscope()) + ",\"anchor_status\":\"SOLVED\"}");
+            }
+        }
+    }
     const int n = static_cast<int>(anchor_stamps_.size());
     for (int kk = 0; kk < n; ++kk)
     {
@@ -246,12 +268,20 @@ void ShadowTimeline::feedLioPose(int64_t stamp_ns, const Sophus::SE3d& T_W_L,
     if (stamp_ns <= watermark_ns_)
     {
         ++diag_.lio_late_after_watermark;
+        if (parity_tracer_) {
+            parity_tracer_->write("INPUT_CONSUME", stamp_ns, -1, "LIO", lio_epoch, 
+                "{\"sensor_type\":\"LIO\",\"sample_time_ns\":" + std::to_string(stamp_ns) + ",\"action\":\"DROPPED_WATERMARK\",\"reason\":\"late_after_watermark\",\"epoch_changed\":false}");
+        }
         return;
     }
 
     if (lio_epoch < current_lio_epoch_)
     {
         ++diag_.lio_stale_skipped;
+        if (parity_tracer_) {
+            parity_tracer_->write("INPUT_CONSUME", stamp_ns, -1, "LIO", lio_epoch, 
+                "{\"sensor_type\":\"LIO\",\"sample_time_ns\":" + std::to_string(stamp_ns) + ",\"action\":\"DROPPED_WATERMARK\",\"reason\":\"stale_skipped\",\"epoch_changed\":false}");
+        }
         return;
     }
     if (lio_epoch > current_lio_epoch_)
@@ -284,6 +314,10 @@ AcceptDecision ShadowTimeline::insertRelativeConstraint(
     if (lateness_ns > config_.max_constraint_lateness_ns)
     {
         ++diag_.lio_rejected_too_late;
+        if (parity_tracer_) {
+            parity_tracer_->write("GATE_EVALUATION", t_j, k, "LIO", key.epoch, 
+                "{\"dT_imu_ref\":0,\"dT_source\":0,\"innovation_6d\":[0,0,0,0,0,0],\"translation_norm\":0,\"rotation_norm\":0,\"decision\":\"REJECTED\",\"reason\":\"TOO_LATE\",\"lateness_ns\":" + std::to_string(lateness_ns) + ",\"watermark_ns\":" + std::to_string(watermark_ns_) + ",\"interpolation_brackets\":[0,0]}");
+        }
         finalized_slots_.insert(slot);
         return AcceptDecision::REJECT_TOO_LATE;
     }
@@ -307,12 +341,20 @@ AcceptDecision ShadowTimeline::insertRelativeConstraint(
     if (trans_err > config_.innovation_trans_m)
     {
         ++diag_.lio_rejected_innovation_trans;
+        if (parity_tracer_) {
+            parity_tracer_->write("GATE_EVALUATION", t_j, k, "LIO", key.epoch, 
+                "{\"dT_imu_ref\":0,\"dT_source\":0,\"innovation_6d\":[0,0,0,0,0,0],\"translation_norm\":" + std::to_string(trans_err) + ",\"rotation_norm\":" + std::to_string(rot_err) + ",\"decision\":\"REJECTED\",\"reason\":\"INNOVATION_TOO_LARGE_TRANS\",\"lateness_ns\":" + std::to_string(lateness_ns) + ",\"watermark_ns\":" + std::to_string(watermark_ns_) + ",\"interpolation_brackets\":[0,0]}");
+        }
         finalized_slots_.insert(slot);
         return AcceptDecision::REJECT_INNOVATION_TRANS;
     }
     if (rot_err > config_.innovation_rot_rad)
     {
         ++diag_.lio_rejected_innovation_rot;
+        if (parity_tracer_) {
+            parity_tracer_->write("GATE_EVALUATION", t_j, k, "LIO", key.epoch, 
+                "{\"dT_imu_ref\":0,\"dT_source\":0,\"innovation_6d\":[0,0,0,0,0,0],\"translation_norm\":" + std::to_string(trans_err) + ",\"rotation_norm\":" + std::to_string(rot_err) + ",\"decision\":\"REJECTED\",\"reason\":\"INNOVATION_TOO_LARGE_ROT\",\"lateness_ns\":" + std::to_string(lateness_ns) + ",\"watermark_ns\":" + std::to_string(watermark_ns_) + ",\"interpolation_brackets\":[0,0]}");
+        }
         finalized_slots_.insert(slot);
         return AcceptDecision::REJECT_INNOVATION_ROT;
     }
@@ -328,6 +370,12 @@ AcceptDecision ShadowTimeline::insertRelativeConstraint(
     committed_measurements_[key] = T_Bi_Bj;
     
     ++diag_.lio_accepted;
+    if (parity_tracer_) {
+        parity_tracer_->write("GATE_EVALUATION", t_j, k, "LIO", key.epoch, 
+            "{\"dT_imu_ref\":0,\"dT_source\":0,\"innovation_6d\":[0,0,0,0,0,0],\"translation_norm\":" + std::to_string(trans_err) + ",\"rotation_norm\":" + std::to_string(rot_err) + ",\"decision\":\"ACCEPTED\",\"reason\":\"SUCCESS\",\"lateness_ns\":" + std::to_string(lateness_ns) + ",\"watermark_ns\":" + std::to_string(watermark_ns_) + ",\"interpolation_brackets\":[0,0]}");
+        parity_tracer_->write("FACTOR_INSERT", t_j, k, "LIO", key.epoch, 
+            "{\"factor_type\":\"BetweenFactorPose3\",\"keys\":[\"X_" + std::to_string(k) + "\",\"X_" + std::to_string(k+1) + "\"],\"insertion_time_ns\":" + std::to_string(t_j) + ",\"status\":\"COMMITTED\"}");
+    }
     flushOptimizer();
     return AcceptDecision::ACCEPTED;
 }
