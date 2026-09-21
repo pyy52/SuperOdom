@@ -159,9 +159,11 @@ if(BUILD_TESTING)
     target_link_libraries(test_lidar_depth vio_wrapper vio_lidar_depth vins_estimator camodocal Eigen3::Eigen)
 
     ament_add_gtest(test_fusion_shadow test/test_fusion_shadow.cpp test/test_fusion_shadow_r4.cpp)
+    target_link_libraries(test_fusion_shadow fusion_2021 Eigen3::Eigen)
     ament_add_gtest(test_fusion_shadow_parity test/test_fusion_shadow_parity.cpp)
     target_link_libraries(test_fusion_shadow_parity fusion_2021 Eigen3::Eigen)
-    target_link_libraries(test_fusion_shadow fusion_2021 Eigen3::Eigen)
+    ament_add_gtest(test_shadow_parity_tracer test/test_shadow_parity_tracer.cpp)
+    target_link_libraries(test_shadow_parity_tracer fusion_2021 Eigen3::Eigen)
   endif()
 endif()
 
