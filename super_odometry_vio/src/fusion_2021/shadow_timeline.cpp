@@ -56,9 +56,17 @@ void ShadowTimeline::feedImu(int64_t stamp_ns, const gtsam::Vector3& acc,
     {
         // 2021 path: no silent dt fallback; malformed/out-of-order dropped.
         ++diag_.imu_dropped;
+        if (parity_tracer_) {
+            parity_tracer_->traceInputConsume(stamp_ns, -1, "IMU", 0, "IMU", stamp_ns,
+                                              "DROPPED_OUT_OF_ORDER", "out_of_order", false);
+        }
         return;
     }
     imu_buf_.push_back({stamp_ns, acc, gyro});
+    if (parity_tracer_) {
+        parity_tracer_->traceInputConsume(stamp_ns, -1, "IMU", 0, "IMU", stamp_ns,
+                                          "ACCEPTED", "none", false);
+    }
 
     if (!imu_initialized_)
     {
@@ -93,6 +101,10 @@ void ShadowTimeline::feedImu(int64_t stamp_ns, const gtsam::Vector3& acc,
         values_.insert(velKey(0), zero_velocity);
         values_.insert(biasKey(0), gtsam::imuBias::ConstantBias());
         graph_dirty_ = true;
+        if (parity_tracer_) {
+            parity_tracer_->traceTimelineAnchor("TIMELINE_ANCHOR_OPEN", t0_ns_, 0, "IMU", 0,
+                                               t0_ns_, "GRAPH_INSERTED", "ACTIVE", "OPEN");
+        }
     }
 
     createAnchorIfNeeded(stamp_ns);
@@ -107,8 +119,11 @@ void ShadowTimeline::createAnchorIfNeeded(int64_t imu_stamp_ns)
         const int k_new = static_cast<int>(anchor_stamps_.size());
         anchor_stamps_.push_back(t0_ns_ + static_cast<int64_t>(k_new) * dt_a);
         if (parity_tracer_) {
-            parity_tracer_->write("TIMELINE_ANCHOR_OPEN", t0_ns_ + static_cast<int64_t>(k_new) * dt_a, k_new, "IMU", 0, 
-                "{\"t_k\":" + std::to_string(t0_ns_ + static_cast<int64_t>(k_new) * dt_a) + ",\"anchor_status\":\"GRAPH_INSERTED\",\"fusion_segment_status\":\"ACTIVE\"}");
+            parity_tracer_->traceTimelineAnchor("TIMELINE_ANCHOR_OPEN",
+                                               t0_ns_ + static_cast<int64_t>(k_new) * dt_a,
+                                               k_new, "IMU", 0,
+                                               t0_ns_ + static_cast<int64_t>(k_new) * dt_a,
+                                               "SCHEDULED", "ACTIVE", "OPEN");
         }
         anchor_T_W_B_.push_back(gtsam::Pose3());  // replaced by interval solve
         gtsam::Vector3 zero_vel;
@@ -184,13 +199,17 @@ void ShadowTimeline::closeInterval(int k)
         if (gap_detected)
         {
             anchor_status_[k + 1] = AnchorStatus::INVALID_GAP;
+            if (parity_tracer_) {
+                parity_tracer_->traceTimelineAnchor("TIMELINE_ANCHOR_CLOSE", anchor_stamps_[k], k, "IMU", 0,
+                                                   anchor_stamps_[k], "INVALID_GAP", "BROKEN", "CLOSED");
+            }
         }
         return;
     }
     ++diag_.intervals_closed;
     if (parity_tracer_) {
-        parity_tracer_->write("TIMELINE_ANCHOR_CLOSE", anchor_stamps_[k], k, "IMU", 0, 
-            "{\"t_k\":" + std::to_string(anchor_stamps_[k]) + ",\"anchor_status\":\"GRAPH_INSERTED\",\"fusion_segment_status\":\"ACTIVE\"}");
+        parity_tracer_->traceTimelineAnchor("TIMELINE_ANCHOR_CLOSE", anchor_stamps_[k], k, "IMU", 0,
+                                           anchor_stamps_[k], "GRAPH_INSERTED", "ACTIVE", "CLOSED");
     }
 
     // Initial values for the new anchor by IMU prediction.
@@ -228,17 +247,8 @@ void ShadowTimeline::flushOptimizer()
     graph_.resize(0);
     values_.clear();
     graph_dirty_ = false;
-    if (parity_tracer_) {
-        for (size_t k = 0; k < anchor_stamps_.size(); ++k) {
-            if (anchor_status_[k] == AnchorStatus::SOLVED) {
-                gtsam::Pose3 T = anchor_T_W_B_[k];
-                gtsam::Vector3 v = anchor_v_W_[k];
-                gtsam::imuBias::ConstantBias b = anchor_bias_[k];
-                parity_tracer_->write("STATE_SNAPSHOT", anchor_stamps_[k], k, "SYSTEM", 0, 
-                    "{\"T_W_B\":" + ParityTracer::poseToJson(T) + ",\"v_W\":" + ParityTracer::vec3ToJson(v) + ",\"bias_acc\":" + ParityTracer::vec3ToJson(b.accelerometer()) + ",\"bias_gyro\":" + ParityTracer::vec3ToJson(b.gyroscope()) + ",\"anchor_status\":\"SOLVED\"}");
-            }
-        }
-    }
+    ++optimizer_update_id_;
+
     const int n = static_cast<int>(anchor_stamps_.size());
     for (int kk = 0; kk < n; ++kk)
     {
@@ -252,8 +262,18 @@ void ShadowTimeline::flushOptimizer()
             anchor_status_[kk] = AnchorStatus::SOLVED;
         }
     }
-    // NOTE: dT_imu_ref_ is NOT refreshed from estimates -- it stays the
-    // immutable IMU-only prediction captured at interval close.
+
+    if (parity_tracer_) {
+        for (size_t k = 0; k < anchor_stamps_.size(); ++k) {
+            if (anchor_status_[k] == AnchorStatus::SOLVED) {
+                parity_tracer_->traceStateSnapshot(
+                    anchor_stamps_[k], static_cast<int>(k), "SYSTEM", 0,
+                    anchor_T_W_B_[k], anchor_v_W_[k],
+                    anchor_bias_[k].accelerometer(), anchor_bias_[k].gyroscope(),
+                    "SOLVED", optimizer_update_id_);
+            }
+        }
+    }
 }
 
 void ShadowTimeline::feedLioPose(int64_t stamp_ns, const Sophus::SE3d& T_W_L,
@@ -269,8 +289,9 @@ void ShadowTimeline::feedLioPose(int64_t stamp_ns, const Sophus::SE3d& T_W_L,
     {
         ++diag_.lio_late_after_watermark;
         if (parity_tracer_) {
-            parity_tracer_->write("INPUT_CONSUME", stamp_ns, -1, "LIO", lio_epoch, 
-                "{\"sensor_type\":\"LIO\",\"sample_time_ns\":" + std::to_string(stamp_ns) + ",\"action\":\"DROPPED_WATERMARK\",\"reason\":\"late_after_watermark\",\"epoch_changed\":false}");
+            parity_tracer_->traceInputConsume(stamp_ns, -1, "LIO", lio_epoch, "LIO", stamp_ns,
+                                              "DROPPED_WATERMARK", "late_after_watermark", false,
+                                              watermark_ns_ - stamp_ns);
         }
         return;
     }
@@ -279,22 +300,28 @@ void ShadowTimeline::feedLioPose(int64_t stamp_ns, const Sophus::SE3d& T_W_L,
     {
         ++diag_.lio_stale_skipped;
         if (parity_tracer_) {
-            parity_tracer_->write("INPUT_CONSUME", stamp_ns, -1, "LIO", lio_epoch, 
-                "{\"sensor_type\":\"LIO\",\"sample_time_ns\":" + std::to_string(stamp_ns) + ",\"action\":\"DROPPED_WATERMARK\",\"reason\":\"stale_skipped\",\"epoch_changed\":false}");
+            parity_tracer_->traceInputConsume(stamp_ns, -1, "LIO", lio_epoch, "LIO", stamp_ns,
+                                              "DROPPED_STALE", "stale_skipped", false);
         }
         return;
     }
-    if (lio_epoch > current_lio_epoch_)
+    bool epoch_changed = (lio_epoch > current_lio_epoch_);
+    if (epoch_changed)
     {
         current_lio_epoch_ = lio_epoch;
     }
     lio_buf_.push_back({stamp_ns, lio_epoch, T_W_L});
+    if (parity_tracer_) {
+        parity_tracer_->traceInputConsume(stamp_ns, -1, "LIO", lio_epoch, "LIO", stamp_ns,
+                                          "BUFFERED", "none", epoch_changed);
+    }
     while (lio_buf_.size() > 200) lio_buf_.pop_front();
     tryInsertLioFactors();
 }
 
 AcceptDecision ShadowTimeline::insertRelativeConstraint(
-    const ConstraintId& key, const gtsam::Pose3& T_Bi_Bj)
+    const ConstraintId& key, const gtsam::Pose3& T_Bi_Bj,
+    int64_t left_bracket_ns, int64_t right_bracket_ns)
 {
     const int k = key.k;
     if (k < 0 || k >= static_cast<int>(dT_imu_ref_.size()))
@@ -310,13 +337,21 @@ AcceptDecision ShadowTimeline::insertRelativeConstraint(
     const int64_t t_j = anchor_stamps_[k + 1];
     const int64_t lateness_ns = newest - t_j;
     ConstraintSlot slot{key.source, k};
-    
+
+    const gtsam::Pose3& ref = dT_imu_ref_[k];
+    const gtsam::Vector6 e = gtsam::Pose3::Logmap(ref.between(T_Bi_Bj));
+    const double rot_err = e.head<3>().norm();
+    const double trans_err = e.tail<3>().norm();
+
     if (lateness_ns > config_.max_constraint_lateness_ns)
     {
         ++diag_.lio_rejected_too_late;
         if (parity_tracer_) {
-            parity_tracer_->write("GATE_EVALUATION", t_j, k, "LIO", key.epoch, 
-                "{\"dT_imu_ref\":0,\"dT_source\":0,\"innovation_6d\":[0,0,0,0,0,0],\"translation_norm\":0,\"rotation_norm\":0,\"decision\":\"REJECTED\",\"reason\":\"TOO_LATE\",\"lateness_ns\":" + std::to_string(lateness_ns) + ",\"watermark_ns\":" + std::to_string(watermark_ns_) + ",\"interpolation_brackets\":[0,0]}");
+            parity_tracer_->traceGateEvaluation(
+                t_j, k, "LIO", key.epoch, ref, T_Bi_Bj, e, trans_err, rot_err,
+                config_.innovation_trans_m, config_.innovation_rot_rad,
+                "REJECTED", "TOO_LATE", lateness_ns, watermark_ns_,
+                left_bracket_ns, right_bracket_ns);
         }
         finalized_slots_.insert(slot);
         return AcceptDecision::REJECT_TOO_LATE;
@@ -325,25 +360,38 @@ AcceptDecision ShadowTimeline::insertRelativeConstraint(
     if (inserted_constraints_.count(key))
     {
         ++diag_.lio_rejected_duplicate;
+        if (parity_tracer_) {
+            parity_tracer_->traceGateEvaluation(
+                t_j, k, "LIO", key.epoch, ref, T_Bi_Bj, e, trans_err, rot_err,
+                config_.innovation_trans_m, config_.innovation_rot_rad,
+                "REJECTED", "DUPLICATE", lateness_ns, watermark_ns_,
+                left_bracket_ns, right_bracket_ns);
+        }
         return AcceptDecision::REJECT_DUPLICATE;
     }
 
     if (committed_slots_.count(slot))
     {
         ++diag_.lio_rejected_slot_occupied;
+        if (parity_tracer_) {
+            parity_tracer_->traceGateEvaluation(
+                t_j, k, "LIO", key.epoch, ref, T_Bi_Bj, e, trans_err, rot_err,
+                config_.innovation_trans_m, config_.innovation_rot_rad,
+                "REJECTED", "SLOT_OCCUPIED", lateness_ns, watermark_ns_,
+                left_bracket_ns, right_bracket_ns);
+        }
         return AcceptDecision::REJECT_SLOT_OCCUPIED;
     }
 
-    const gtsam::Pose3& ref = dT_imu_ref_[k];
-    const gtsam::Vector6 e = gtsam::Pose3::Logmap(ref.between(T_Bi_Bj));
-    const double rot_err = e.head<3>().norm();
-    const double trans_err = e.tail<3>().norm();
     if (trans_err > config_.innovation_trans_m)
     {
         ++diag_.lio_rejected_innovation_trans;
         if (parity_tracer_) {
-            parity_tracer_->write("GATE_EVALUATION", t_j, k, "LIO", key.epoch, 
-                "{\"dT_imu_ref\":0,\"dT_source\":0,\"innovation_6d\":[0,0,0,0,0,0],\"translation_norm\":" + std::to_string(trans_err) + ",\"rotation_norm\":" + std::to_string(rot_err) + ",\"decision\":\"REJECTED\",\"reason\":\"INNOVATION_TOO_LARGE_TRANS\",\"lateness_ns\":" + std::to_string(lateness_ns) + ",\"watermark_ns\":" + std::to_string(watermark_ns_) + ",\"interpolation_brackets\":[0,0]}");
+            parity_tracer_->traceGateEvaluation(
+                t_j, k, "LIO", key.epoch, ref, T_Bi_Bj, e, trans_err, rot_err,
+                config_.innovation_trans_m, config_.innovation_rot_rad,
+                "REJECTED", "INNOVATION_TOO_LARGE_TRANS", lateness_ns, watermark_ns_,
+                left_bracket_ns, right_bracket_ns);
         }
         finalized_slots_.insert(slot);
         return AcceptDecision::REJECT_INNOVATION_TRANS;
@@ -352,8 +400,11 @@ AcceptDecision ShadowTimeline::insertRelativeConstraint(
     {
         ++diag_.lio_rejected_innovation_rot;
         if (parity_tracer_) {
-            parity_tracer_->write("GATE_EVALUATION", t_j, k, "LIO", key.epoch, 
-                "{\"dT_imu_ref\":0,\"dT_source\":0,\"innovation_6d\":[0,0,0,0,0,0],\"translation_norm\":" + std::to_string(trans_err) + ",\"rotation_norm\":" + std::to_string(rot_err) + ",\"decision\":\"REJECTED\",\"reason\":\"INNOVATION_TOO_LARGE_ROT\",\"lateness_ns\":" + std::to_string(lateness_ns) + ",\"watermark_ns\":" + std::to_string(watermark_ns_) + ",\"interpolation_brackets\":[0,0]}");
+            parity_tracer_->traceGateEvaluation(
+                t_j, k, "LIO", key.epoch, ref, T_Bi_Bj, e, trans_err, rot_err,
+                config_.innovation_trans_m, config_.innovation_rot_rad,
+                "REJECTED", "INNOVATION_TOO_LARGE_ROT", lateness_ns, watermark_ns_,
+                left_bracket_ns, right_bracket_ns);
         }
         finalized_slots_.insert(slot);
         return AcceptDecision::REJECT_INNOVATION_ROT;
@@ -363,24 +414,33 @@ AcceptDecision ShadowTimeline::insertRelativeConstraint(
         poseKey(k), poseKey(k + 1), T_Bi_Bj,
         makePoseNoise(config_.lio_sigma_rot_rad, config_.lio_sigma_trans_m)));
     graph_dirty_ = true;
-    
+
     inserted_constraints_.insert(key);
     committed_slots_.insert(slot);
     finalized_slots_.insert(slot);
     committed_measurements_[key] = T_Bi_Bj;
-    
+
     ++diag_.lio_accepted;
     if (parity_tracer_) {
-        parity_tracer_->write("GATE_EVALUATION", t_j, k, "LIO", key.epoch, 
-            "{\"dT_imu_ref\":0,\"dT_source\":0,\"innovation_6d\":[0,0,0,0,0,0],\"translation_norm\":" + std::to_string(trans_err) + ",\"rotation_norm\":" + std::to_string(rot_err) + ",\"decision\":\"ACCEPTED\",\"reason\":\"SUCCESS\",\"lateness_ns\":" + std::to_string(lateness_ns) + ",\"watermark_ns\":" + std::to_string(watermark_ns_) + ",\"interpolation_brackets\":[0,0]}");
-        parity_tracer_->write("FACTOR_INSERT", t_j, k, "LIO", key.epoch, 
-            "{\"factor_type\":\"BetweenFactorPose3\",\"keys\":[\"X_" + std::to_string(k) + "\",\"X_" + std::to_string(k+1) + "\"],\"insertion_time_ns\":" + std::to_string(t_j) + ",\"status\":\"COMMITTED\"}");
+        parity_tracer_->traceGateEvaluation(
+            t_j, k, "LIO", key.epoch, ref, T_Bi_Bj, e, trans_err, rot_err,
+            config_.innovation_trans_m, config_.innovation_rot_rad,
+            "ACCEPTED", "SUCCESS", lateness_ns, watermark_ns_,
+            left_bracket_ns, right_bracket_ns);
+
+        gtsam::Vector6 sigmas;
+        sigmas << config_.lio_sigma_rot_rad, config_.lio_sigma_rot_rad, config_.lio_sigma_rot_rad,
+                  config_.lio_sigma_trans_m, config_.lio_sigma_trans_m, config_.lio_sigma_trans_m;
+        std::vector<std::string> keys = {"X_" + std::to_string(k), "X_" + std::to_string(k + 1)};
+        parity_tracer_->traceFactorInsert(t_j, k, "LIO", key.epoch, "BetweenFactorPose3",
+                                          keys, T_Bi_Bj, sigmas, true, true, t_j);
     }
     flushOptimizer();
     return AcceptDecision::ACCEPTED;
 }
 
-AcceptDecision ShadowTimeline::lookupLioPoseAt(int64_t stamp_ns, Sophus::SE3d& T_W_L, uint32_t& epoch_out) const
+AcceptDecision ShadowTimeline::lookupLioPoseAt(int64_t stamp_ns, Sophus::SE3d& T_W_L, uint32_t& epoch_out,
+                                               int64_t* left_bracket_ns, int64_t* right_bracket_ns) const
 {
     const LioSample* s_exact = nullptr;
     const LioSample* s_before = nullptr;
@@ -405,10 +465,15 @@ AcceptDecision ShadowTimeline::lookupLioPoseAt(int64_t stamp_ns, Sophus::SE3d& T
 
     if (s_exact)
     {
+        if (left_bracket_ns) *left_bracket_ns = s_exact->stamp_ns;
+        if (right_bracket_ns) *right_bracket_ns = s_exact->stamp_ns;
         T_W_L = s_exact->T_W_L;
         epoch_out = s_exact->epoch;
         return AcceptDecision::ACCEPTED;
     }
+
+    if (left_bracket_ns) *left_bracket_ns = s_before ? s_before->stamp_ns : 0;
+    if (right_bracket_ns) *right_bracket_ns = s_after ? s_after->stamp_ns : 0;
 
     if (!s_before || !s_after)
     {
@@ -468,16 +533,28 @@ void ShadowTimeline::tryInsertLioFactors()
         uint32_t epoch_i = 0;
         uint32_t epoch_j = 0;
         Sophus::SE3d T_W_L_i, T_W_L_j;
-        
-        AcceptDecision dec_i = lookupLioPoseAt(t_i, T_W_L_i, epoch_i);
-        AcceptDecision dec_j = lookupLioPoseAt(t_j, T_W_L_j, epoch_j);
-        
-        if (dec_i == AcceptDecision::REJECT_CROSS_EPOCH || 
+        int64_t left_b_i = 0, right_b_i = 0;
+        int64_t left_b_j = 0, right_b_j = 0;
+
+        AcceptDecision dec_i = lookupLioPoseAt(t_i, T_W_L_i, epoch_i, &left_b_i, &right_b_i);
+        AcceptDecision dec_j = lookupLioPoseAt(t_j, T_W_L_j, epoch_j, &left_b_j, &right_b_j);
+
+        const int64_t lateness_ns = anchor_stamps_.back() - t_j;
+        const gtsam::Pose3& ref = dT_imu_ref_[k];
+
+        if (dec_i == AcceptDecision::REJECT_CROSS_EPOCH ||
             dec_j == AcceptDecision::REJECT_CROSS_EPOCH ||
             (dec_i == AcceptDecision::ACCEPTED && dec_j == AcceptDecision::ACCEPTED && epoch_i != epoch_j))
         {
             ++diag_.lio_rejected_cross_epoch;
             finalized_slots_.insert({0, k});
+            if (parity_tracer_) {
+                parity_tracer_->traceGateEvaluation(
+                    t_j, k, "LIO", epoch_j, ref, gtsam::Pose3(), gtsam::Vector6::Zero(),
+                    0.0, 0.0, config_.innovation_trans_m, config_.innovation_rot_rad,
+                    "REJECTED", "CROSS_EPOCH", lateness_ns, watermark_ns_,
+                    left_b_i, right_b_j);
+            }
             continue;
         }
 
@@ -485,6 +562,13 @@ void ShadowTimeline::tryInsertLioFactors()
         {
             ++diag_.lio_no_bracket;
             finalized_slots_.insert({0, k});
+            if (parity_tracer_) {
+                parity_tracer_->traceGateEvaluation(
+                    t_j, k, "LIO", epoch_j, ref, gtsam::Pose3(), gtsam::Vector6::Zero(),
+                    0.0, 0.0, config_.innovation_trans_m, config_.innovation_rot_rad,
+                    "REJECTED", "NO_BRACKET", lateness_ns, watermark_ns_,
+                    left_b_i, right_b_j);
+            }
             continue;
         }
 
@@ -499,10 +583,7 @@ void ShadowTimeline::tryInsertLioFactors()
         const gtsam::Pose3 T_Bi_Bj = T_W_Bi_g.between(T_W_Bj_g);
 
         const ConstraintId key{0 /* SOURCE_LIO */, epoch_j, k};
-        AcceptDecision dec = insertRelativeConstraint(key, T_Bi_Bj);
-        
-        // If not accepted but NOT duplicate, it's rejected terminal (since too_late, slots, innovations are finalized).
-        // The slot is already marked finalized inside insertRelativeConstraint if it was a terminal failure.
+        insertRelativeConstraint(key, T_Bi_Bj, left_b_i, right_b_j);
     }
 
     while (next_lio_scan_k_ <= last_closed_k_ &&

@@ -171,11 +171,15 @@ class ShadowTimeline
                      uint32_t lio_epoch = 0);
 
     // Look up or interpolate LIO source pose at a given timestamp.
-    AcceptDecision lookupLioPoseAt(int64_t stamp_ns, Sophus::SE3d& T_W_L, uint32_t& epoch_out) const;
+    AcceptDecision lookupLioPoseAt(int64_t stamp_ns, Sophus::SE3d& T_W_L, uint32_t& epoch_out,
+                                   int64_t* left_bracket_ns = nullptr,
+                                   int64_t* right_bracket_ns = nullptr) const;
 
     // Insert a relative constraint with explicit key and one-shot deduplication.
     AcceptDecision insertRelativeConstraint(const ConstraintId& key,
-                                             const gtsam::Pose3& T_Bi_Bj);
+                                             const gtsam::Pose3& T_Bi_Bj,
+                                             int64_t left_bracket_ns = 0,
+                                             int64_t right_bracket_ns = 0);
 
     // Latest optimized anchor state + high-rate prediction to stamp_ns.
     bool latestAnchor(gtsam::Pose3& T_W_B, gtsam::Vector3& v_W,
@@ -249,6 +253,7 @@ class ShadowTimeline
     ShadowConfig config_;
     std::shared_ptr<gtsam::PreintegrationParams> imu_params_;
     std::shared_ptr<ParityTracer> parity_tracer_;
+    uint64_t optimizer_update_id_{0};
     ShadowDiag diag_;
 
     std::deque<ImuSample> imu_buf_;  // time-ordered; out-of-order dropped
