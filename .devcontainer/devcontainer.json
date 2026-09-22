@@ -1,12 +1,11 @@
 {
-  "name": "SuperOdom 2021 (ROS2 Humble)",
+  "name": "SuperOdom ROS2 Humble Codespace (Optimized)",
   "build": {
     "dockerfile": "Dockerfile",
     "context": ".."
   },
 
-  "remoteUser": "root",
-  "containerUser": "root",
+  "remoteUser": "vscode",
 
   "workspaceFolder": "/workspaces/SuperOdom",
 
@@ -14,13 +13,14 @@
     "ROS_LOCALHOST_ONLY": "1",
     "ROS_DOMAIN_ID": "42",
     "FASTRTPS_DEFAULT_PROFILES_FILE": "/workspaces/SuperOdom/.devcontainer/disable_shm.xml",
-    "RCUTILS_COLORIZED_OUTPUT": "1"
+    "RCUTILS_COLORIZED_OUTPUT": "1",
+    "MAKEFLAGS": "-j8"
   },
 
   "hostRequirements": {
-    "cpus": 4,
-    "memory": "16gb",
-    "storage": "32gb"
+    "cpus": 8,
+    "memory": "32gb",
+    "storage": "64gb"
   },
 
   "postCreateCommand": "bash .devcontainer/post-create.sh",
@@ -28,6 +28,7 @@
   "customizations": {
     "vscode": {
       "extensions": [
+        "ms-iot.vscode-ros",
         "ms-vscode.cpptools",
         "ms-vscode.cpptools-extension-pack",
         "ms-vscode.cmake-tools",
@@ -46,5 +47,7 @@
     }
   },
 
-  "forwardPorts": [8765]
+  "forwardPorts": [
+    8765
+  ]
 }
