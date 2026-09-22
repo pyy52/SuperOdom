@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Same FastDDS profile as the proven local run script (so_run3.sh):
+     UDPv4 only, shared-memory transport disabled. Prevents the SHM
+     deadlocks/crashes seen when several ROS nodes run in one container. -->
+<profiles xmlns="http://www.eprosima.com/XMLSchemas/FASTDDS_Profiles">
+  <transport_descriptors>
+    <transport_descriptor>
+      <transport_id>udp_transport</transport_id>
+      <type>UDPv4</type>
+    </transport_descriptor>
+  </transport_descriptors>
+  <participant profile_name="udp_only" is_default_profile="true">
+    <rtps>
+      <userTransports>
+        <transport_id>udp_transport</transport_id>
+      </userTransports>
+      <useBuiltinTransports>false</useBuiltinTransports>
+    </rtps>
+  </participant>
+</profiles>

@@ -1,38 +1,50 @@
 {
-  "name": "superodom-ros2-humble",
+  "name": "SuperOdom 2021 (ROS2 Humble)",
   "build": {
     "dockerfile": "Dockerfile",
     "context": ".."
   },
+
+  "remoteUser": "root",
+  "containerUser": "root",
+
+  "workspaceFolder": "/workspaces/SuperOdom",
+
+  "containerEnv": {
+    "ROS_LOCALHOST_ONLY": "1",
+    "ROS_DOMAIN_ID": "42",
+    "FASTRTPS_DEFAULT_PROFILES_FILE": "/workspaces/SuperOdom/.devcontainer/disable_shm.xml",
+    "RCUTILS_COLORIZED_OUTPUT": "1"
+  },
+
   "hostRequirements": {
     "cpus": 4,
     "memory": "16gb",
-    "storage": "64gb"
+    "storage": "32gb"
   },
-  "containerUser": "root",
-  "updateRemoteUserUID": false,
-  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/SuperOdom,type=bind",
-  "workspaceFolder": "/workspaces/SuperOdom",
+
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-vscode.cpptools",
+        "ms-vscode.cpptools-extension-pack",
         "ms-vscode.cmake-tools",
+        "twxs.cmake",
         "ms-python.python",
-        "ms-iot.vscode-ros",
-        "llvm-vs-code-extensions.vscode-clangd"
+        "CompilerMon.rviz2-extension",
+        "eamodio.gitlens"
       ],
       "settings": {
-        "cmake.configureOnOpen": false,
-        "C_Cpp.intelliSenseEngine": "disabled",
-        "clangd.arguments": [
-          "--background-index",
-          "--clang-tidy",
-          "--completion-style=detailed",
-          "--header-insertion=never"
-        ]
+        "files.associations": {
+          "*.yaml": "yaml"
+        },
+        "C_Cpp.default.cppStandard": "c++17",
+        "cmake.generator": "Unix Makefiles"
       }
     }
   },
-  "postCreateCommand": "bash .devcontainer/post_create.sh"
+
+  "forwardPorts": [8765]
 }
